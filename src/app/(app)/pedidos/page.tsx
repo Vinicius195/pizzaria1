@@ -37,6 +37,7 @@ import { Input } from '@/components/ui/input';
 import { useUser } from '@/contexts/user-context';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 function OrderCard({ 
   order, 
@@ -164,6 +165,7 @@ function PedidosPageContent() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const { currentUser } = useUser();
+  const isMobile = useIsMobile();
   const statusFilter = searchParams.get('status');
   
   const [isAddOrderDialogOpen, setIsAddOrderDialogOpen] = useState(false);
@@ -196,6 +198,11 @@ function PedidosPageContent() {
         if (order.status === 'Pronto' && order.orderType === 'retirada') {
           nextStatus = 'Entregue';
           return { ...order, status: 'Entregue' };
+        }
+        
+        if (order.status === 'Pronto' && order.orderType === 'entrega') {
+          nextStatus = 'Em Entrega';
+          return { ...order, status: 'Em Entrega' };
         }
 
         const nextStatusIndex = currentStatusIndex + 1;
@@ -297,6 +304,22 @@ function PedidosPageContent() {
   const ordersByStatus = (status: OrderStatus) => {
     return filteredOrders.filter((order: Order) => order.status === status);
   };
+  
+  function KanbanSkeleton() {
+    return (
+      <div className="w-full overflow-x-auto pb-4">
+        <div className="grid grid-flow-col auto-cols-fr md:auto-cols-auto gap-6">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="w-full md:w-[320px] lg:w-[350px] flex-shrink-0 space-y-4">
+              <Skeleton className="h-12 w-full rounded-lg" />
+              <Skeleton className="h-44 w-full rounded-lg" />
+              <Skeleton className="h-44 w-full rounded-lg" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -364,38 +387,90 @@ function PedidosPageContent() {
             ))}
         </Tabs>
       ) : (
-        <div className="w-full overflow-x-auto pb-4">
-            <div className="grid grid-flow-col auto-cols-fr md:auto-cols-auto gap-6">
-                {kanbanStatuses.map(({status, icon: Icon, color}) => (
-                    <div key={status} className="w-full md:w-[320px] lg:w-[350px] flex-shrink-0">
-                        <div className={cn("flex items-center justify-between p-3 rounded-t-lg text-white", color)}>
-                            <div className="flex items-center gap-2">
-                                <Icon className="h-5 w-5" />
-                                <h2 className="font-headline font-semibold text-lg">{status}</h2>
-                            </div>
-                            <Badge className="bg-white/20 text-white hover:bg-white/30">{ordersByStatus(status).length}</Badge>
-                        </div>
-                        <div className="h-full min-h-[calc(100vh-320px)] bg-muted/40 rounded-b-lg p-3 space-y-4">
-                            {ordersByStatus(status).length > 0 ? (
-                                ordersByStatus(status).map((order) => (
-                                    <OrderCard
-                                        key={order.id}
-                                        order={order}
-                                        onAdvanceStatus={handleAdvanceStatus}
-                                        onViewDetails={handleViewDetails}
-                                        onCancelOrder={handleCancelOrder}
-                                    />
-                                ))
-                            ) : (
-                                <div className="flex items-center justify-center h-48 rounded-md text-sm text-muted-foreground">
-                                    <p>Nenhum pedido aqui.</p>
-                                </div>
-                            )}
-                        </div>
+        <>
+          {isMobile === undefined && <KanbanSkeleton />}
+          {isMobile === true && (
+            <Tabs defaultValue={kanbanStatuses[0].status} className="w-full">
+              <TabsList className="grid w-full grid-cols-3 bg-transparent p-0 border-b">
+                {kanbanStatuses.map(({ status, icon: Icon }) => (
+                  <TabsTrigger
+                    key={status}
+                    value={status}
+                    className="flex flex-col h-auto p-2 gap-2 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-primary/5 data-[state=active]:shadow-none"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Icon className="h-5 w-5" />
+                      <span className="font-semibold hidden sm:inline">{status}</span>
                     </div>
+                    <Badge
+                      className={cn(
+                        "w-6 h-6 flex items-center justify-center p-0 rounded-full text-xs",
+                        ordersByStatus(status).length > 0 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                      )}
+                    >
+                      {ordersByStatus(status).length}
+                    </Badge>
+                  </TabsTrigger>
                 ))}
+              </TabsList>
+              {kanbanStatuses.map(({ status, icon: Icon }) => (
+                <TabsContent key={status} value={status} className="mt-4 grid gap-4">
+                  {ordersByStatus(status).length > 0 ? (
+                    ordersByStatus(status).map((order) => (
+                      <OrderCard
+                        key={order.id}
+                        order={order}
+                        onAdvanceStatus={handleAdvanceStatus}
+                        onViewDetails={handleViewDetails}
+                        onCancelOrder={handleCancelOrder}
+                      />
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-64 rounded-md text-sm text-muted-foreground bg-muted/20">
+                      <Icon className="h-16 w-16 text-muted-foreground/30" />
+                      <p className="mt-4 font-medium">Nenhum pedido em "{status}"</p>
+                    </div>
+                  )}
+                </TabsContent>
+              ))}
+            </Tabs>
+          )}
+          {isMobile === false && (
+            <div className="w-full overflow-x-auto pb-4">
+              <div className="grid grid-flow-col auto-cols-fr md:auto-cols-auto gap-6">
+                  {kanbanStatuses.map(({status, icon: Icon, color}) => (
+                      <div key={status} className="w-full md:w-[320px] lg:w-[350px] flex-shrink-0">
+                          <div className={cn("flex items-center justify-between p-3 rounded-t-lg text-white", color)}>
+                              <div className="flex items-center gap-2">
+                                  <Icon className="h-5 w-5" />
+                                  <h2 className="font-headline font-semibold text-lg">{status}</h2>
+                              </div>
+                              <Badge className="bg-white/20 text-white hover:bg-white/30">{ordersByStatus(status).length}</Badge>
+                          </div>
+                          <div className="h-full min-h-[calc(100vh-320px)] bg-muted/40 rounded-b-lg p-3 space-y-4">
+                              {ordersByStatus(status).length > 0 ? (
+                                  ordersByStatus(status).map((order) => (
+                                      <OrderCard
+                                          key={order.id}
+                                          order={order}
+                                          onAdvanceStatus={handleAdvanceStatus}
+                                          onViewDetails={handleViewDetails}
+                                          onCancelOrder={handleCancelOrder}
+                                      />
+                                  ))
+                              ) : (
+                                  <div className="flex flex-col items-center justify-center h-48 rounded-md text-sm text-muted-foreground">
+                                      <Icon className="h-12 w-12 text-muted-foreground/30" />
+                                      <p className="mt-4">Nenhum pedido aqui.</p>
+                                  </div>
+                              )}
+                          </div>
+                      </div>
+                  ))}
+              </div>
             </div>
-        </div>
+          )}
+        </>
       )}
     </>
   );
