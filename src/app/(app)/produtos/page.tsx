@@ -5,7 +5,6 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/componen
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { mockProducts } from '@/lib/mock-data';
-import Image from 'next/image';
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
@@ -24,14 +23,13 @@ export default function ProdutosPage() {
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
         {mockProducts.map((product) => (
-          <Card key={product.id} className="shadow-md hover:shadow-lg transition-shadow flex flex-col">
-            <CardHeader className="flex flex-row items-start justify-between pb-4">
-              <div>
-                <CardTitle className="text-xl font-headline leading-tight mb-1">{product.name}</CardTitle>
-                 <Badge variant="outline">{product.category}</Badge>
-              </div>
+          <Card key={product.id} className="shadow-md hover:shadow-lg transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-lg font-headline truncate" title={product.name}>
+                {product.name}
+              </CardTitle>
                <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button aria-haspopup="true" size="icon" variant="ghost">
@@ -50,16 +48,9 @@ export default function ProdutosPage() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </CardHeader>
-             <CardContent className="flex-1 flex flex-col items-center justify-center text-center gap-4">
-               <Image
-                alt={product.name}
-                className="aspect-square rounded-md object-cover"
-                height="140"
-                src={product.imageUrl}
-                width="140"
-                data-ai-hint="pizza food"
-              />
-               <div className="text-2xl font-bold">
+            <CardContent className="pt-0 pb-4 px-6 flex items-center justify-between">
+               <Badge variant="outline">{product.category}</Badge>
+               <div className="text-lg font-bold">
                 {product.price.toLocaleString('pt-BR', {
                   style: 'currency',
                   currency: 'BRL',
