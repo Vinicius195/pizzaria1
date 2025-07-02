@@ -33,4 +33,5 @@ export interface Order {
   orderType: 'entrega' | 'retirada';
   address?: string;
   locationLink?: string;
+  notes?: string;
 };

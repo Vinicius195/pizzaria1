@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import type { Order, OrderStatus } from '@/types';
 import { cn } from '@/lib/utils';
-import { Clock, User, Tag, ShoppingCart, DollarSign, Bike, Store, MapPin, Link as LinkIcon } from 'lucide-react';
+import { Clock, User, Tag, ShoppingCart, DollarSign, Bike, Store, MapPin, Link as LinkIcon, MessageSquare } from 'lucide-react';
 
 interface OrderDetailsDialogProps {
   order: Order | null;
@@ -115,6 +115,16 @@ export function OrderDetailsDialog({ order, open, onOpenChange }: OrderDetailsDi
               ))}
             </ul>
           </div>
+
+          {order.notes && (
+            <>
+              <Separator />
+              <div className="space-y-2">
+                <h4 className="flex items-center gap-2 font-medium text-muted-foreground"><MessageSquare className="h-4 w-4" /> Observações</h4>
+                <p className="text-sm text-foreground/90 whitespace-pre-wrap">{order.notes}</p>
+              </div>
+            </>
+          )}
           
           <Separator />
           

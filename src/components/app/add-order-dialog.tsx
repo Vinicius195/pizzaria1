@@ -50,6 +50,7 @@ const addOrderSchema = z.object({
   addressType: z.enum(['manual', 'link']).default('manual'),
   address: z.string().optional(),
   locationLink: z.string().optional(),
+  notes: z.string().optional(),
 }).superRefine((data, ctx) => {
     data.items.forEach((item, index) => {
       const product = mockProducts.find(p => p.id === item.productId);
@@ -123,6 +124,7 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
       addressType: 'manual',
       address: '',
       locationLink: '',
+      notes: '',
     },
   });
 
@@ -457,6 +459,25 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
                   render={() => <FormMessage className="mt-2" />}
                 />
               </div>
+
+              <Separator className="my-4" />
+
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Observações (Opcional)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Ex: Pizza sem cebola, troco para R$100, etc."
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
             <DialogFooter className="pt-4 border-t">

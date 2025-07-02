@@ -244,6 +244,7 @@ function PedidosPageContent() {
         orderType: data.orderType,
         address: data.address,
         locationLink: data.locationLink,
+        notes: data.notes,
     };
 
     setOrders(prevOrders => [...prevOrders, newOrder]);
