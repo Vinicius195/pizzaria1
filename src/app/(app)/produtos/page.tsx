@@ -224,7 +224,13 @@ export default function ProdutosPage() {
     }
   };
 
-  const groupedProducts = products.reduce((acc, product) => {
+  const filteredProductsForAdmin = searchQuery
+    ? products.filter(p =>
+        p.name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : products;
+
+  const groupedProducts = filteredProductsForAdmin.reduce((acc, product) => {
     const { category } = product;
     if (!acc[category]) {
       acc[category] = [];
@@ -266,12 +272,21 @@ export default function ProdutosPage() {
             <h1 className="text-3xl font-bold font-headline">Produtos</h1>
             <p className="text-muted-foreground">Adicione, edite e gerencie seus produtos.</p>
           </div>
-          {isManager && (
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="relative w-full sm:w-auto sm:max-w-xs">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar produto..."
+                className="pl-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
             <Button onClick={handleOpenAddDialog}>
               <PlusCircle className="mr-2 h-4 w-4" />
               Adicionar Produto
             </Button>
-          )}
+          </div>
         </div>
 
         <div className="space-y-8">
@@ -359,6 +374,13 @@ export default function ProdutosPage() {
               </section>
             )
           ))}
+           {filteredProductsForAdmin.length === 0 && searchQuery && (
+             <div className="text-center text-muted-foreground py-16">
+                <Pizza className="mx-auto h-12 w-12" />
+                <h3 className="mt-4 text-lg font-semibold">Nenhum produto encontrado</h3>
+                <p className="mt-1 text-sm">Tente refinar sua busca ou adicione um novo produto.</p>
+            </div>
+          )}
         </div>
       </div>
     </>
