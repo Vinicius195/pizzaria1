@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Pizza, LogIn, AlertCircle } from 'lucide-react';
+import { Pizza, LogIn, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/contexts/user-context';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -31,6 +31,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { login } = useUser();
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -107,7 +108,30 @@ export default function LoginPage() {
                     <FormItem>
                       <FormLabel>Senha</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} />
+                        <div className="relative">
+                          <Input
+                            type={showPassword ? 'text' : 'password'}
+                            placeholder="••••••••"
+                            {...field}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground hover:bg-transparent hover:text-foreground"
+                            onClick={() => setShowPassword((prev) => !prev)}
+                            tabIndex={-1}
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                            <span className="sr-only">
+                              {showPassword ? 'Esconder senha' : 'Mostrar senha'}
+                            </span>
+                          </Button>
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
