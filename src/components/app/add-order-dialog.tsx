@@ -25,11 +25,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { mockProducts } from '@/lib/mock-data';
-import type { Product } from '@/types';
+import type { Product, PizzaSize } from '@/types';
 import { Check, ChevronsUpDown, Link, PlusCircle, Trash2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -37,6 +37,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 const orderItemSchema = z.object({
   productId: z.string().min(1, "Selecione um produto."),
   quantity: z.coerce.number().min(1, "A quantidade deve ser pelo menos 1."),
+  size: z.custom<PizzaSize>().optional(),
 });
 
 const addOrderSchema = z.object({
@@ -49,6 +50,25 @@ const addOrderSchema = z.object({
   address: z.string().optional(),
   locationLink: z.string().optional(),
 }).superRefine((data, ctx) => {
+    data.items.forEach((item, index) => {
+      const product = mockProducts.find(p => p.id === item.productId);
+      if (product?.category === 'Pizza') {
+        if (!item.size) {
+           ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: "Selecione o tamanho da pizza.",
+              path: [`items`, index, `size`],
+           });
+        } else if (!product.sizes || !product.sizes[item.size]) {
+             ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Tamanho indisponível para esta pizza.",
+                path: [`items`, index, `size`],
+             });
+        }
+      }
+    });
+
     if (data.orderType === 'entrega') {
         if (data.addressType === 'manual') {
             if (!data.address || data.address.trim().length < 10) {
@@ -98,7 +118,7 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
     defaultValues: {
       customerName: '',
       orderType: 'retirada',
-      items: [{ productId: '', quantity: 1 }],
+      items: [{ productId: '', quantity: 1, size: undefined }],
       addressType: 'manual',
       address: '',
       locationLink: '',
@@ -109,6 +129,8 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
     control: form.control,
     name: "items",
   });
+  
+  const watchedItems = form.watch('items');
 
   const orderType = form.watch('orderType');
   const addressType = form.watch('addressType');
@@ -289,96 +311,130 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
               <div>
                 <FormLabel>Itens do Pedido</FormLabel>
                 <div className="space-y-3 mt-2">
-                  {fields.map((field, index) => (
-                    <div key={field.id} className="flex items-start gap-2">
-                       <FormField
-                        control={form.control}
-                        name={`items.${index}.productId`}
-                        render={({ field }) => (
-                          <FormItem className="flex-1">
-                            <Popover open={openProductCombobox === index} onOpenChange={(isOpen) => setOpenProductCombobox(isOpen ? index : null)}>
-                              <PopoverTrigger asChild>
-                                <FormControl>
-                                  <Button
-                                    variant="outline"
-                                    role="combobox"
-                                    aria-expanded={openProductCombobox === index}
-                                    className={cn(
-                                      "w-full justify-between",
-                                      !field.value && "text-muted-foreground"
-                                    )}
-                                  >
-                                    {field.value
-                                      ? availableProducts.find(
-                                          (product) => product.id === field.value
-                                        )?.name
-                                      : "Selecione um produto"}
-                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                  </Button>
-                                </FormControl>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                                <Command>
-                                  <CommandInput placeholder="Pesquisar produto..." />
-                                  <CommandEmpty>Nenhum produto encontrado.</CommandEmpty>
-                                  <CommandList>
-                                    {Object.entries(groupedProducts).map(([category, products]) => (
-                                      <CommandGroup key={category} heading={category}>
-                                        {products.map((product) => (
-                                          <CommandItem
-                                            value={product.name}
-                                            key={product.id}
-                                            onSelect={() => {
-                                              form.setValue(`items.${index}.productId`, product.id, { shouldValidate: true });
-                                              setOpenProductCombobox(null)
-                                            }}
-                                          >
-                                            <Check
-                                              className={cn(
-                                                "mr-2 h-4 w-4",
-                                                product.id === field.value
-                                                  ? "opacity-100"
-                                                  : "opacity-0"
-                                              )}
-                                            />
-                                            {product.name}
-                                          </CommandItem>
+                  {fields.map((field, index) => {
+                    const selectedProduct = availableProducts.find(p => p.id === watchedItems[index]?.productId);
+                    return (
+                      <div key={field.id} className="flex flex-col gap-2 rounded-md border p-4">
+                        <div className="flex items-start gap-2">
+                          <FormField
+                            control={form.control}
+                            name={`items.${index}.productId`}
+                            render={({ field }) => (
+                              <FormItem className="flex-1">
+                                <Popover open={openProductCombobox === index} onOpenChange={(isOpen) => setOpenProductCombobox(isOpen ? index : null)}>
+                                  <PopoverTrigger asChild>
+                                    <FormControl>
+                                      <Button
+                                        variant="outline"
+                                        role="combobox"
+                                        aria-expanded={openProductCombobox === index}
+                                        className={cn(
+                                          "w-full justify-between",
+                                          !field.value && "text-muted-foreground"
+                                        )}
+                                      >
+                                        {field.value
+                                          ? availableProducts.find(
+                                              (product) => product.id === field.value
+                                            )?.name
+                                          : "Selecione um produto"}
+                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                      </Button>
+                                    </FormControl>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                                    <Command>
+                                      <CommandInput placeholder="Pesquisar produto..." />
+                                      <CommandEmpty>Nenhum produto encontrado.</CommandEmpty>
+                                      <CommandList>
+                                        {Object.entries(groupedProducts).map(([category, products]) => (
+                                          <CommandGroup key={category} heading={category}>
+                                            {products.map((product) => (
+                                              <CommandItem
+                                                value={product.name}
+                                                key={product.id}
+                                                onSelect={() => {
+                                                  form.setValue(`items.${index}.productId`, product.id, { shouldValidate: true });
+                                                  form.setValue(`items.${index}.size`, undefined, { shouldValidate: false });
+                                                  setOpenProductCombobox(null)
+                                                }}
+                                              >
+                                                <Check
+                                                  className={cn(
+                                                    "mr-2 h-4 w-4",
+                                                    product.id === field.value
+                                                      ? "opacity-100"
+                                                      : "opacity-0"
+                                                  )}
+                                                />
+                                                {product.name}
+                                              </CommandItem>
+                                            ))}
+                                          </CommandGroup>
                                         ))}
-                                      </CommandGroup>
-                                    ))}
-                                  </CommandList>
-                                </Command>
-                              </PopoverContent>
-                            </Popover>
-                            <FormMessage />
-                          </FormItem>
+                                      </CommandList>
+                                    </Command>
+                                  </PopoverContent>
+                                </Popover>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name={`items.${index}.quantity`}
+                            render={({ field }) => (
+                              <FormItem className="w-24">
+                                <FormControl>
+                                  <Input type="number" min="1" placeholder="Qtd." {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)} disabled={fields.length <= 1}>
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Remover item</span>
+                          </Button>
+                        </div>
+                        {selectedProduct?.category === 'Pizza' && selectedProduct.sizes && (
+                            <FormField
+                                control={form.control}
+                                name={`items.${index}.size`}
+                                render={({ field }) => (
+                                <FormItem className="pt-2">
+                                    <FormLabel className="text-sm">Tamanho</FormLabel>
+                                    <FormControl>
+                                    <RadioGroup
+                                        onValueChange={field.onChange}
+                                        defaultValue={field.value}
+                                        className="flex flex-wrap gap-x-4 gap-y-2"
+                                    >
+                                        {Object.keys(selectedProduct.sizes!).map((size) => (
+                                        <FormItem key={size} className="flex items-center space-x-2 space-y-0">
+                                            <FormControl>
+                                                <RadioGroupItem value={size} />
+                                            </FormControl>
+                                            <FormLabel className="font-normal capitalize cursor-pointer">{size}</FormLabel>
+                                        </FormItem>
+                                        ))}
+                                    </RadioGroup>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
                         )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name={`items.${index}.quantity`}
-                        render={({ field }) => (
-                          <FormItem className="w-24">
-                            <FormControl>
-                              <Input type="number" min="1" placeholder="Qtd." {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)} disabled={fields.length <= 1}>
-                        <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Remover item</span>
-                      </Button>
-                    </div>
-                  ))}
+                      </div>
+                    )
+                  })}
                 </div>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   className="mt-3"
-                  onClick={() => append({ productId: '', quantity: 1 })}
+                  onClick={() => append({ productId: '', quantity: 1, size: undefined })}
                 >
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Adicionar Item

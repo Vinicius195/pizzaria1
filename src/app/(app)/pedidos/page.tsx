@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { mockOrders, orderStatuses, mockProducts } from '@/lib/mock-data';
-import type { Order, OrderStatus } from '@/types';
+import type { Order, OrderStatus, PizzaSize } from '@/types';
 import { Clock, PlusCircle, Bike, MoreHorizontal, Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AddOrderDialog, type AddOrderFormValues } from '@/components/app/add-order-dialog';
@@ -44,7 +44,7 @@ function OrderCard({
   order: Order; 
   onAdvanceStatus: (orderId: string) => void; 
   onViewDetails: (order: Order) => void; 
-  onCancelOrder: (orderId: string) => void;
+  onCancelOrder: (orderId: string) => void; 
 }) {
   const getStatusColor = (status: OrderStatus) => {
     switch (status) {
@@ -90,7 +90,7 @@ function OrderCard({
         <ul className="space-y-1 text-sm">
           {order.items.map((item, index) => (
             <li key={index} className="flex justify-between">
-              <span>{item.quantity}x {item.productName}</span>
+              <span>{item.quantity}x {item.productName} {item.size && <span className='capitalize'>({item.size})</span>}</span>
             </li>
           ))}
         </ul>
@@ -190,29 +190,39 @@ function PedidosPageContent() {
   };
 
   const handleAddOrder = (data: AddOrderFormValues) => {
-    const newOrderItems = data.items.map(item => {
-      const product = mockProducts.find(p => p.id === item.productId);
-      return {
-        productName: product?.name || 'Produto Desconhecido',
-        quantity: item.quantity,
-        price: product?.price || 0,
-      };
-    });
+    const orderItemsWithDetails = data.items.map(item => {
+        const product = mockProducts.find(p => p.id === item.productId);
+        if (!product) return null;
 
-    const total = newOrderItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+        let price = 0;
+        if (product.category === 'Pizza' && item.size && product.sizes) {
+            price = product.sizes[item.size] || 0;
+        } else if (product.price) {
+            price = product.price;
+        }
 
+        return {
+            productName: product.name,
+            quantity: item.quantity,
+            size: item.size,
+            price: price,
+        };
+    }).filter(Boolean);
+
+
+    const total = orderItemsWithDetails.reduce((acc, item) => acc + (item!.price * item!.quantity), 0);
     const newOrderId = String(Math.max(0, ...orders.map(o => parseInt(o.id, 10))) + 1);
 
     const newOrder: Order = {
-      id: newOrderId,
-      customerName: data.customerName,
-      items: newOrderItems.map(({ productName, quantity }) => ({ productName, quantity })),
-      total: total,
-      status: 'Recebido',
-      timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-      orderType: data.orderType,
-      address: data.address,
-      locationLink: data.locationLink,
+        id: newOrderId,
+        customerName: data.customerName,
+        items: orderItemsWithDetails.map(({ productName, quantity, size }) => ({ productName, quantity, size: size as PizzaSize | undefined })),
+        total,
+        status: 'Recebido',
+        timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        orderType: data.orderType,
+        address: data.address,
+        locationLink: data.locationLink,
     };
 
     setOrders(prevOrders => [...prevOrders, newOrder]);

@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/componen
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { mockProducts } from '@/lib/mock-data';
-import type { Product } from '@/types';
+import type { Product, PizzaSize } from '@/types';
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
@@ -64,27 +64,51 @@ export default function ProdutosPage() {
   };
   
   const handleSubmitProduct = (data: ProductFormValues) => {
-    if (editingProduct) {
-      setProducts(prev =>
-        prev.map(p =>
-          p.id === editingProduct.id ? { ...p, ...data } : p
-        )
-      );
-      toast({
-        title: "Produto Atualizado!",
-        description: `O produto "${data.name}" foi atualizado com sucesso.`,
-      });
+    const commonData = {
+        name: data.name,
+        category: data.category,
+        description: data.description,
+    };
+
+    let productData: Omit<Product, 'id' | 'isAvailable'>;
+
+    if (data.category === 'Pizza') {
+        productData = {
+            ...commonData,
+            category: 'Pizza',
+            sizes: Object.fromEntries(
+                Object.entries(data.sizes || {}).filter(([, price]) => price && price > 0)
+            ) as Partial<Record<PizzaSize, number>>,
+        };
     } else {
-      const newProduct: Product = {
-        id: String(Date.now()),
-        isAvailable: true,
-        ...data,
-      };
-      setProducts(prev => [...prev, newProduct]);
-      toast({
-        title: "Produto Adicionado!",
-        description: `O produto "${data.name}" foi adicionado com sucesso.`,
-      });
+        productData = {
+            ...commonData,
+            category: data.category,
+            price: data.price,
+        };
+    }
+
+    if (editingProduct) {
+        setProducts(prev =>
+            prev.map(p =>
+                p.id === editingProduct.id ? { ...p, ...productData } : p
+            )
+        );
+        toast({
+            title: "Produto Atualizado!",
+            description: `O produto "${data.name}" foi atualizado com sucesso.`,
+        });
+    } else {
+        const newProduct: Product = {
+            id: String(Date.now()),
+            isAvailable: true,
+            ...productData,
+        };
+        setProducts(prev => [...prev, newProduct]);
+        toast({
+            title: "Produto Adicionado!",
+            description: `O produto "${data.name}" foi adicionado com sucesso.`,
+        });
     }
   };
 
@@ -164,14 +188,28 @@ export default function ProdutosPage() {
                       {product.description}
                     </p>
                   )}
+                  {product.category === 'Pizza' && product.sizes && (
+                    <div className="my-2 space-y-1">
+                      {Object.entries(product.sizes).map(([size, price]) => (
+                        <div key={size} className="flex justify-between items-center text-sm">
+                          <span className="text-muted-foreground capitalize">{size}</span>
+                          <span className="font-semibold">
+                            {price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   <div className="flex items-center justify-between pt-2">
                     <Badge variant="outline">{product.category}</Badge>
-                    <div className="text-lg font-bold">
-                      {product.price.toLocaleString('pt-BR', {
-                        style: 'currency',
-                        currency: 'BRL',
-                      })}
-                    </div>
+                    {product.category !== 'Pizza' && product.price && (
+                      <div className="text-lg font-bold">
+                        {product.price.toLocaleString('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL',
+                        })}
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </div>

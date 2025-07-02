@@ -110,7 +110,7 @@ export function OrderDetailsDialog({ order, open, onOpenChange }: OrderDetailsDi
             <ul className="space-y-1 text-sm list-disc list-inside pl-2">
               {order.items.map((item, index) => (
                 <li key={index} className="flex justify-between">
-                  <span>{item.quantity}x {item.productName}</span>
+                  <span>{item.quantity}x {item.productName} {item.size && <span className='capitalize'>({item.size})</span>}</span>
                 </li>
               ))}
             </ul>

@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { Product } from '@/types';
+import { pizzaSizes } from '@/types';
 import { useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -38,8 +39,33 @@ const productSchema = z.object({
   category: z.enum(['Pizza', 'Bebida', 'Adicional'], {
     required_error: "Selecione uma categoria.",
   }),
-  price: z.coerce.number().min(0.01, "O preço deve ser maior que zero."),
+  price: z.coerce.number().optional(),
   description: z.string().optional(),
+  sizes: z.object({
+    pequeno: z.coerce.number().optional(),
+    medio: z.coerce.number().optional(),
+    grande: z.coerce.number().optional(),
+    GG: z.coerce.number().optional(),
+  }).optional(),
+}).superRefine((data, ctx) => {
+    if (data.category === 'Pizza') {
+        const hasAtLeastOneSize = data.sizes && Object.values(data.sizes).some(p => p && p > 0);
+        if (!hasAtLeastOneSize) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["sizes"],
+                message: "Pelo menos um tamanho de pizza deve ter um preço maior que zero.",
+            });
+        }
+    } else {
+        if (!data.price || data.price <= 0) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["price"],
+                message: "O preço deve ser maior que zero.",
+            });
+        }
+    }
 });
 
 export type ProductFormValues = z.infer<typeof productSchema>;
@@ -59,26 +85,50 @@ export function AddProductDialog({ open, onOpenChange, onSubmit, product }: AddP
       category: undefined,
       price: 0,
       description: '',
+      sizes: {
+        pequeno: 0,
+        medio: 0,
+        grande: 0,
+        GG: 0,
+      }
     },
   });
 
   const category = form.watch('category');
 
   useEffect(() => {
-    if (product) {
-      form.reset(product);
-    } else {
-      form.reset({
-        name: '',
-        category: undefined,
-        price: 0,
-        description: '',
-      });
+    if (open) {
+      if (product) {
+        form.reset({
+          name: product.name,
+          category: product.category,
+          description: product.description || '',
+          price: product.price || 0,
+          sizes: {
+            pequeno: product.sizes?.pequeno || 0,
+            medio: product.sizes?.medio || 0,
+            grande: product.sizes?.grande || 0,
+            GG: product.sizes?.GG || 0,
+          },
+        });
+      } else {
+        form.reset({
+          name: '',
+          category: undefined,
+          price: 0,
+          description: '',
+          sizes: {
+            pequeno: 0,
+            medio: 0,
+            grande: 0,
+            GG: 0,
+          }
+        });
+      }
     }
-  }, [product, form, open]);
+  }, [product, open, form]);
 
   const handleDialogClose = () => {
-    form.reset();
     onOpenChange(false);
   }
 
@@ -153,22 +203,65 @@ export function AddProductDialog({ open, onOpenChange, onSubmit, product }: AddP
                 )}
               />
             )}
-            <FormField
-              control={form.control}
-              name="price"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Preço</FormLabel>
-                   <FormControl>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground text-sm">R$</span>
-                      <Input type="number" step="0.01" placeholder="0,00" className="pl-8" {...field} />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            
+            {category === 'Pizza' && (
+              <div className="space-y-4 rounded-md border p-4">
+                <FormLabel>Preços por Tamanho</FormLabel>
+                <div className="grid grid-cols-2 gap-4">
+                  {pizzaSizes.map((size) => (
+                    <FormField
+                      key={size}
+                      control={form.control}
+                      name={`sizes.${size}`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="capitalize font-normal">{size}</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground text-sm">R$</span>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                placeholder="0,00"
+                                className="pl-8"
+                                {...field}
+                                value={field.value || ''}
+                                onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)}
+                              />
+                            </div>
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  ))}
+                </div>
+                <FormField
+                  control={form.control}
+                  name="sizes"
+                  render={() => <FormMessage />}
+                 />
+              </div>
+            )}
+
+            {category && category !== 'Pizza' && (
+              <FormField
+                control={form.control}
+                name="price"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Preço</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground text-sm">R$</span>
+                        <Input type="number" step="0.01" placeholder="0,00" className="pl-8" {...field} value={field.value || ''} />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
             <DialogFooter className="pt-4">
               <DialogClose asChild>
                 <Button type="button" variant="ghost">Cancelar</Button>
