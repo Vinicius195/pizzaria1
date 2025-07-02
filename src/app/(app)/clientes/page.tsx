@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { mockCustomers } from '@/lib/mock-data';
 import type { Customer } from '@/types';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Link as LinkIcon, ExternalLink } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AddCustomerDialog, type CustomerFormValues } from '@/components/app/add-customer-dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -30,9 +30,16 @@ export default function ClientesPage() {
   };
 
   const handleSubmit = (data: CustomerFormValues) => {
+    const updatedData = {
+        name: data.name,
+        phone: data.phone,
+        address: data.addressType === 'manual' ? (data.address || undefined) : undefined,
+        locationLink: data.addressType === 'link' ? (data.locationLink || undefined) : undefined,
+    };
+
     if (editingCustomer) {
       setCustomers(customers.map(c => 
-        c.id === editingCustomer.id ? { ...c, name: data.name, phone: data.phone, address: data.address } : c
+        c.id === editingCustomer.id ? { ...c, ...updatedData } : c
       ));
       toast({
         title: 'Cliente Atualizado!',
@@ -41,9 +48,7 @@ export default function ClientesPage() {
     } else {
       const newCustomer: Customer = {
         id: String(Date.now()),
-        name: data.name,
-        phone: data.phone,
-        address: data.address,
+        ...updatedData,
         lastOrderDate: new Date().toISOString().split('T')[0],
         totalSpent: 0,
         orderCount: 0,
@@ -82,11 +87,11 @@ export default function ClientesPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nome</TableHead>
-                <TableHead>Telefone</TableHead>
-                <TableHead className="hidden md:table-cell">Endereço</TableHead>
+                <TableHead className="whitespace-nowrap">Telefone</TableHead>
+                <TableHead className="hidden md:table-cell">Endereço / Localização</TableHead>
                 <TableHead className="hidden sm:table-cell text-center">Pedidos</TableHead>
-                <TableHead className="hidden lg:table-cell">Último Pedido</TableHead>
-                <TableHead className="text-right">Total Gasto</TableHead>
+                <TableHead className="hidden lg:table-cell whitespace-nowrap">Último Pedido</TableHead>
+                <TableHead className="text-right whitespace-nowrap">Total Gasto</TableHead>
                 <TableHead>
                   <span className="sr-only">Ações</span>
                 </TableHead>
@@ -96,15 +101,30 @@ export default function ClientesPage() {
               {customers.map((customer) => (
                 <TableRow key={customer.id}>
                   <TableCell className="font-medium">{customer.name}</TableCell>
-                  <TableCell>{customer.phone}</TableCell>
-                  <TableCell className="hidden md:table-cell max-w-[250px] truncate" title={customer.address}>
-                    {customer.address || 'Não informado'}
+                  <TableCell className="whitespace-nowrap">{customer.phone}</TableCell>
+                   <TableCell className="hidden md:table-cell max-w-[250px]">
+                    {customer.address ? (
+                        <span className="truncate block" title={customer.address}>{customer.address}</span>
+                    ) : customer.locationLink ? (
+                        <a
+                            href={customer.locationLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 text-primary underline hover:text-primary/80"
+                        >
+                            <LinkIcon className="h-4 w-4" />
+                            Abrir link no mapa
+                            <ExternalLink className="h-3 w-3" />
+                        </a>
+                    ) : (
+                        'Não informado'
+                    )}
                   </TableCell>
                   <TableCell className="hidden sm:table-cell text-center">{customer.orderCount}</TableCell>
-                  <TableCell className="hidden lg:table-cell">
+                  <TableCell className="hidden lg:table-cell whitespace-nowrap">
                     {new Date(customer.lastOrderDate).toLocaleDateString('pt-BR')}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right whitespace-nowrap">
                     {customer.totalSpent.toLocaleString('pt-BR', {
                       style: 'currency',
                       currency: 'BRL',

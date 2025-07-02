@@ -23,15 +23,19 @@ import {
 } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Phone } from 'lucide-react';
+import { Phone, Link as LinkIcon } from 'lucide-react';
 import type { Customer } from '@/types';
 import { Textarea } from '../ui/textarea';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 
 const customerSchema = z.object({
   name: z.string().min(3, "O nome do cliente é obrigatório."),
   phone: z.string().min(10, "O telefone é obrigatório."),
+  addressType: z.enum(['manual', 'link']).default('manual'),
   address: z.string().optional(),
+  locationLink: z.string().url({ message: "Por favor, insira um link válido." }).optional().or(z.literal('')),
 });
+
 
 export type CustomerFormValues = z.infer<typeof customerSchema>;
 
@@ -48,16 +52,23 @@ export function AddCustomerDialog({ open, onOpenChange, onSubmit, customer }: Ad
     defaultValues: {
       name: '',
       phone: '',
+      addressType: 'manual',
       address: '',
+      locationLink: '',
     },
   });
+  
+  const addressType = form.watch('addressType');
 
   useEffect(() => {
     if (open) {
+      const initialAddressType = customer?.locationLink ? 'link' : 'manual';
       form.reset({
         name: customer?.name || '',
         phone: customer?.phone || '',
+        addressType: initialAddressType,
         address: customer?.address || '',
+        locationLink: customer?.locationLink || '',
       });
     }
   }, [customer, open, form]);
@@ -114,23 +125,80 @@ export function AddCustomerDialog({ open, onOpenChange, onSubmit, customer }: Ad
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="address"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Endereço (Opcional)</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Ex: Rua das Flores, 123, Bairro Jardim, Cidade..."
-                      {...field}
-                      value={field.value ?? ''}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+             <FormField
+                control={form.control}
+                name="addressType"
+                render={({ field }) => (
+                  <FormItem className="space-y-3 pt-2">
+                    <FormLabel>Endereço / Localização (Opcional)</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          form.setValue('address', '');
+                          form.setValue('locationLink', '');
+                        }}
+                        defaultValue={field.value}
+                        className="flex space-x-4"
+                      >
+                        <FormItem className="flex items-center space-x-2 space-y-0">
+                          <FormControl><RadioGroupItem value="manual" /></FormControl>
+                          <FormLabel className="font-normal cursor-pointer">Digitar Endereço</FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-2 space-y-0">
+                          <FormControl><RadioGroupItem value="link" /></FormControl>
+                          <FormLabel className="font-normal cursor-pointer">Link do Mapa</FormLabel>
+                        </FormItem>
+                      </RadioGroup>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              {addressType === 'manual' && (
+                <FormField
+                  control={form.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Ex: Rua das Flores, 123, Bairro Jardim, Cidade..."
+                          {...field}
+                          value={field.value ?? ''}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               )}
-            />
+
+              {addressType === 'link' && (
+                <FormField
+                  control={form.control}
+                  name="locationLink"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <div className="relative">
+                          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                            <LinkIcon className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                          <Input
+                            placeholder="https://maps.app.goo.gl/..."
+                            className="pl-10"
+                            {...field}
+                            value={field.value ?? ''}
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
              <DialogFooter className="pt-4 border-t">
                 <DialogClose asChild>
                     <Button type="button" variant="ghost">Cancelar</Button>

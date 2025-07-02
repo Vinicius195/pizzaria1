@@ -29,7 +29,7 @@ export const mockCustomers: Customer[] = [
   { id: '1', name: 'João Silva', phone: '(11) 98765-4321', address: 'Rua Fictícia, 123, São Paulo - SP', lastOrderDate: '2024-07-20', totalSpent: 91.00, orderCount: 1 },
   { id: '2', name: 'Maria Oliveira', phone: '(21) 91234-5678', address: 'Avenida Exemplo, 456, Rio de Janeiro - RJ', lastOrderDate: '2024-07-20', totalSpent: 62.00, orderCount: 1 },
   { id: '3', name: 'Carlos Pereira', phone: '(31) 95555-4444', address: 'Praça da Liberdade, 789, Belo Horizonte - MG', lastOrderDate: '2024-07-19', totalSpent: 110.50, orderCount: 3 },
-  { id: '4', name: 'Ana Costa', phone: '(41) 98888-7777', lastOrderDate: '2024-07-18', totalSpent: 230.00, orderCount: 5 },
+  { id: '4', name: 'Ana Costa', phone: '(41) 98888-7777', locationLink: 'https://maps.app.goo.gl/exampleForAna', lastOrderDate: '2024-07-18', totalSpent: 230.00, orderCount: 5 },
 ];
 
 export const orderStatuses: OrderStatus[] = ["Recebido", "Preparando", "Pronto", "Em Entrega", "Entregue", "Cancelado"];

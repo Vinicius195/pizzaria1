@@ -20,6 +20,7 @@ export interface Customer {
   name: string;
   phone: string;
   address?: string;
+  locationLink?: string;
   lastOrderDate: string;
   totalSpent: number;
   orderCount: number;
