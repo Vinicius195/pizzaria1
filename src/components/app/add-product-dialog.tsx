@@ -42,6 +42,7 @@ const productSchema = z.object({
   }),
   price: z.coerce.number().optional(),
   description: z.string().optional(),
+  volume: z.string().optional(),
   sizes: z.object({
     pequeno: z.coerce.number().optional(),
     medio: z.coerce.number().optional(),
@@ -66,6 +67,13 @@ const productSchema = z.object({
                 message: "O preço deve ser maior que zero.",
             });
         }
+        if (data.category === 'Bebida' && (!data.volume || data.volume.trim() === '')) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["volume"],
+                message: "O volume da bebida é obrigatório.",
+            });
+        }
     }
 });
 
@@ -86,6 +94,7 @@ export function AddProductDialog({ open, onOpenChange, onSubmit, product }: AddP
       category: undefined,
       price: 0,
       description: '',
+      volume: '',
       sizes: {
         pequeno: 0,
         medio: 0,
@@ -105,6 +114,7 @@ export function AddProductDialog({ open, onOpenChange, onSubmit, product }: AddP
           category: product.category,
           description: product.description || '',
           price: product.price || 0,
+          volume: product.volume || '',
           sizes: {
             pequeno: product.sizes?.pequeno || 0,
             medio: product.sizes?.medio || 0,
@@ -120,6 +130,7 @@ export function AddProductDialog({ open, onOpenChange, onSubmit, product }: AddP
           category: undefined,
           price: 0,
           description: '',
+          volume: '',
           sizes: { pequeno: 0, medio: 0, grande: 0, GG: 0 }
         });
       }
@@ -162,7 +173,7 @@ export function AddProductDialog({ open, onOpenChange, onSubmit, product }: AddP
                   <FormItem>
                     <FormLabel>Nome do Produto</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ex: Pizza de Calabresa" {...field} />
+                      <Input placeholder="Ex: Pizza de Calabresa, Coca-Cola" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -250,22 +261,39 @@ export function AddProductDialog({ open, onOpenChange, onSubmit, product }: AddP
               )}
 
               {category && category !== 'Pizza' && (
-                <FormField
-                  control={form.control}
-                  name="price"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Preço</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground text-sm">R$</span>
-                          <Input type="number" step="0.01" placeholder="0,00" className="pl-8" {...field} value={field.value || ''} />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                 <>
+                    <FormField
+                    control={form.control}
+                    name="price"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Preço</FormLabel>
+                        <FormControl>
+                            <div className="relative">
+                            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground text-sm">R$</span>
+                            <Input type="number" step="0.01" placeholder="0,00" className="pl-8" {...field} value={field.value || ''} />
+                            </div>
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    {category === 'Bebida' && (
+                        <FormField
+                            control={form.control}
+                            name="volume"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Volume</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="Ex: 2L, Lata 350ml" {...field} value={field.value ?? ''} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    )}
+                 </>
               )}
             </div>
 

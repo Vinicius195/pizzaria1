@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { mockOrders, orderStatuses, mockProducts } from '@/lib/mock-data';
-import type { Order, OrderStatus, PizzaSize } from '@/types';
+import type { Order, OrderStatus, PizzaSize, Product } from '@/types';
 import { Clock, PlusCircle, Bike, MoreHorizontal, Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AddOrderDialog, type AddOrderFormValues } from '@/components/app/add-order-dialog';
@@ -202,6 +202,13 @@ function PedidosPageContent() {
   const handleViewDetails = (order: Order) => {
     setSelectedOrder(order);
   };
+  
+  const getProductDisplayName = (p: Product) => {
+    if (p.category === 'Bebida' && p.volume) {
+        return `${p.name} ${p.volume}`;
+    }
+    return p.name;
+  };
 
   const handleAddOrder = (data: AddOrderFormValues) => {
     const orderItemsWithDetails = data.items.map(item => {
@@ -216,7 +223,7 @@ function PedidosPageContent() {
         }
 
         return {
-            productName: product.name,
+            productName: getProductDisplayName(product),
             quantity: item.quantity,
             size: item.size,
             price: price,

@@ -149,6 +149,13 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
     {} as Record<Product['category'], Product[]>
   );
   
+  const getProductDisplayName = (product: Product): string => {
+    if (product.category === 'Bebida' && product.volume) {
+        return `${product.name} ${product.volume}`;
+    }
+    return product.name;
+  };
+
   const handleClose = () => {
     form.reset();
     onOpenChange(false);
@@ -335,9 +342,9 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
                                         )}
                                       >
                                         {field.value
-                                          ? availableProducts.find(
+                                          ? getProductDisplayName(availableProducts.find(
                                               (product) => product.id === field.value
-                                            )?.name
+                                            )!)
                                           : "Selecione um produto"}
                                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                       </Button>
@@ -352,7 +359,7 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
                                           <CommandGroup key={category} heading={category}>
                                             {products.map((product) => (
                                               <CommandItem
-                                                value={product.name}
+                                                value={getProductDisplayName(product)}
                                                 key={product.id}
                                                 onSelect={() => {
                                                   form.setValue(`items.${index}.productId`, product.id, { shouldValidate: true });
@@ -368,7 +375,7 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
                                                       : "opacity-0"
                                                   )}
                                                 />
-                                                {product.name}
+                                                {getProductDisplayName(product)}
                                               </CommandItem>
                                             ))}
                                           </CommandGroup>

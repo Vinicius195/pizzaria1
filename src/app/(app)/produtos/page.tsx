@@ -85,6 +85,7 @@ export default function ProdutosPage() {
             ...commonData,
             category: data.category,
             price: data.price,
+            volume: data.volume,
         };
     }
 
@@ -125,13 +126,13 @@ export default function ProdutosPage() {
   const drinkGroups = products
     .filter((p) => p.category === 'Bebida')
     .reduce((acc, product) => {
-        const price = product.price || 0;
-        if (!acc[price]) {
-            acc[price] = [];
+        const volume = product.volume || 'Tamanho único';
+        if (!acc[volume]) {
+            acc[volume] = [];
         }
-        acc[price].push(product);
+        acc[volume].push(product);
         return acc;
-    }, {} as Record<number, Product[]>);
+    }, {} as Record<string, Product[]>);
 
   const categoryOrder: ('Pizza' | 'Adicional')[] = ['Pizza', 'Adicional'];
 
@@ -267,21 +268,23 @@ export default function ProdutosPage() {
                 Bebidas
               </h2>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-                {Object.entries(drinkGroups).map(([price, drinkList]) => (
-                  <Card key={price} className="shadow-md hover:shadow-lg transition-shadow flex flex-col">
+                {Object.entries(drinkGroups).map(([volume, drinkList]) => (
+                  <Card key={volume} className="shadow-md hover:shadow-lg transition-shadow flex flex-col">
                     <CardHeader>
-                      <CardTitle className="text-lg font-headline">Bebidas</CardTitle>
-                       <CardDescription className="text-base font-semibold text-foreground">
-                        {Number(price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                      </CardDescription>
+                      <CardTitle className="text-lg font-headline">{volume}</CardTitle>
                     </CardHeader>
                     <CardContent className="pt-0 pb-4 px-6 flex-1">
                       <div className="space-y-3">
                         {drinkList.map((drink) => (
                           <div key={drink.id} className="flex items-center justify-between gap-2">
-                            <Label htmlFor={`available-${drink.id}`} className="font-normal text-sm truncate" title={drink.name}>
-                              {drink.name}
-                            </Label>
+                            <div className="flex-1 space-y-1">
+                              <Label htmlFor={`available-${drink.id}`} className="font-normal text-sm truncate" title={drink.name}>
+                                {drink.name}
+                              </Label>
+                              <div className="text-sm font-semibold text-muted-foreground">
+                                 {Number(drink.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                              </div>
+                            </div>
                             <div className="flex items-center shrink-0">
                                <Switch
                                 id={`available-${drink.id}`}

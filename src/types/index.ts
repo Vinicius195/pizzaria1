@@ -10,6 +10,7 @@ export interface Product {
   category: 'Pizza' | 'Bebida' | 'Adicional';
   price?: number; // For non-pizza items
   sizes?: Partial<Record<PizzaSize, number>>; // For pizza items
+  volume?: string; // For drinks, e.g., "2L", "350ml"
   isAvailable: boolean;
   description?: string;
 };
