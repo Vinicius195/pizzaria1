@@ -134,7 +134,7 @@ export function AddProductDialog({ open, onOpenChange, onSubmit, product }: AddP
             GG: product.sizes?.GG || 0,
           },
           drinkSizes: product.category === 'Bebida' && product.sizes 
-            ? Object.entries(product.sizes).map(([name, price]) => ({ name, price }))
+            ? Object.entries(product.sizes).map(([name, price]) => ({ name, price: price as number }))
             : [],
         });
       } else {
@@ -144,7 +144,7 @@ export function AddProductDialog({ open, onOpenChange, onSubmit, product }: AddP
           price: 0,
           description: '',
           pizzaSizes: getMockSettings().basePrices,
-          drinkSizes: [{ name: '', price: 0 }],
+          drinkSizes: [],
         });
       }
     }
@@ -292,7 +292,7 @@ export function AddProductDialog({ open, onOpenChange, onSubmit, product }: AddP
                                 </FormItem>
                             )}
                           />
-                          <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={fields.length <= 1}>
+                          <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                        </div>
