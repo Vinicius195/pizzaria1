@@ -36,8 +36,13 @@ export default function ProdutosPage() {
     const availableProducts = mockProducts.filter(p => p.isAvailable);
 
     const filteredProducts = searchQuery
-      ? availableProducts.filter(p =>
-          p.name.toLowerCase().includes(searchQuery.toLowerCase())
+      ? availableProducts.filter(
+          p =>
+            p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (p.sizes &&
+              Object.keys(p.sizes).some(size =>
+                size.toLowerCase().includes(searchQuery.toLowerCase())
+              ))
         )
       : availableProducts;
     
@@ -225,8 +230,13 @@ export default function ProdutosPage() {
   };
 
   const filteredProductsForAdmin = searchQuery
-    ? products.filter(p =>
-        p.name.toLowerCase().includes(searchQuery.toLowerCase())
+    ? products.filter(
+        p =>
+          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (p.sizes &&
+            Object.keys(p.sizes).some(size =>
+              size.toLowerCase().includes(searchQuery.toLowerCase())
+            ))
       )
     : products;
 
