@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense } from 'react';
+import React, { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   Card,
@@ -15,8 +15,9 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { mockOrders, orderStatuses } from '@/lib/mock-data';
 import type { Order, OrderStatus } from '@/types';
-import { Clock } from 'lucide-react';
+import { Clock, PlusCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AddOrderDialog } from '@/components/app/add-order-dialog';
 
 function OrderCard({ order }: { order: Order }) {
   const getStatusColor = (status: OrderStatus) => {
@@ -70,31 +71,42 @@ function OrderCard({ order }: { order: Order }) {
 function PedidosPageContent() {
   const searchParams = useSearchParams();
   const statusFilter = searchParams.get('status');
+  const [isAddOrderDialogOpen, setIsAddOrderDialogOpen] = useState(false);
   
   const allTabs = ['Todos', ...orderStatuses];
   const defaultValue = statusFilter && allTabs.includes(statusFilter) ? statusFilter : 'Todos';
 
   return (
-    <Tabs defaultValue={defaultValue} className="w-full">
-      <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 md:grid-cols-7">
-        <TabsTrigger value="Todos">Todos</TabsTrigger>
-        {orderStatuses.map(status => (
-          <TabsTrigger key={status} value={status}>{status}</TabsTrigger>
-        ))}
-      </TabsList>
-      <TabsContent value="Todos" className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {mockOrders.map(order => (
-          <OrderCard key={order.id} order={order} />
-        ))}
-      </TabsContent>
-      {orderStatuses.map(status => (
-        <TabsContent key={status} value={status} className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {mockOrders.filter(order => order.status === status).map(order => (
+    <>
+      <AddOrderDialog open={isAddOrderDialogOpen} onOpenChange={setIsAddOrderDialogOpen} />
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold font-headline">Pedidos</h1>
+        <Button onClick={() => setIsAddOrderDialogOpen(true)}>
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Adicionar Pedido
+        </Button>
+      </div>
+      <Tabs defaultValue={defaultValue} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 md:grid-cols-7">
+          <TabsTrigger value="Todos">Todos</TabsTrigger>
+          {orderStatuses.map(status => (
+            <TabsTrigger key={status} value={status}>{status}</TabsTrigger>
+          ))}
+        </TabsList>
+        <TabsContent value="Todos" className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {mockOrders.map(order => (
             <OrderCard key={order.id} order={order} />
           ))}
         </TabsContent>
-      ))}
-    </Tabs>
+        {orderStatuses.map(status => (
+          <TabsContent key={status} value={status} className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {mockOrders.filter(order => order.status === status).map(order => (
+              <OrderCard key={order.id} order={order} />
+            ))}
+          </TabsContent>
+        ))}
+      </Tabs>
+    </>
   );
 }
 
