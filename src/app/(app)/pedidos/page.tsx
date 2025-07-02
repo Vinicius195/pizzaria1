@@ -1,5 +1,7 @@
 'use client';
 
+import React, { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   Card,
   CardContent,
@@ -14,6 +16,7 @@ import { Separator } from '@/components/ui/separator';
 import { mockOrders, orderStatuses } from '@/lib/mock-data';
 import type { Order, OrderStatus } from '@/types';
 import { Clock } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 function OrderCard({ order }: { order: Order }) {
   const getStatusColor = (status: OrderStatus) => {
@@ -64,10 +67,16 @@ function OrderCard({ order }: { order: Order }) {
   );
 }
 
-export default function PedidosPage() {
+function PedidosPageContent() {
+  const searchParams = useSearchParams();
+  const statusFilter = searchParams.get('status');
+  
+  const allTabs = ['Todos', ...orderStatuses];
+  const defaultValue = statusFilter && allTabs.includes(statusFilter) ? statusFilter : 'Todos';
+
   return (
-    <Tabs defaultValue="Todos" className="w-full">
-      <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-6">
+    <Tabs defaultValue={defaultValue} className="w-full">
+      <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 md:grid-cols-7">
         <TabsTrigger value="Todos">Todos</TabsTrigger>
         {orderStatuses.map(status => (
           <TabsTrigger key={status} value={status}>{status}</TabsTrigger>
@@ -87,4 +96,29 @@ export default function PedidosPage() {
       ))}
     </Tabs>
   );
+}
+
+function PedidosPageSkeleton() {
+  return (
+    <div className="w-full space-y-4">
+      <div className="grid w-full grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
+        {Array.from({ length: 7 }).map((_, i) => (
+          <Skeleton key={i} className="h-10 w-full" />
+        ))}
+      </div>
+      <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-[250px] w-full" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function PedidosPage() {
+  return (
+    <Suspense fallback={<PedidosPageSkeleton />}>
+      <PedidosPageContent />
+    </Suspense>
+  )
 }

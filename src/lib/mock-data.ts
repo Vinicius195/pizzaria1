@@ -17,6 +17,7 @@ export const mockOrders: Order[] = [
   { id: '1004', customerName: 'Ana Costa', items: [{ productName: 'Pizza de Frango com Catupiry', quantity: 1 }], total: 49.90, status: 'Em Entrega', timestamp: '10:40' },
   { id: '1005', customerName: 'Lucas Souza', items: [{ productName: 'Coca-Cola 2L', quantity: 1 }], total: 12.00, status: 'Entregue', timestamp: '10:25' },
    { id: '1006', customerName: 'Mariana Lima', items: [{ productName: 'Pizza de Calabresa', quantity: 1 }, { productName: 'Coca-Cola 2L', quantity: 1 }], total: 57.50, status: 'Preparando', timestamp: '10:42' },
+   { id: '1007', customerName: 'Pedro Almeida', items: [{ productName: 'Pizza de Quatro Queijos', quantity: 1 }], total: 52.00, status: 'Cancelado', timestamp: '10:50' },
 ];
 
 export const mockCustomers: Customer[] = [
@@ -26,4 +27,4 @@ export const mockCustomers: Customer[] = [
   { id: '4', name: 'Ana Costa', phone: '(41) 98888-7777', lastOrderDate: '2024-07-18', totalSpent: 230.00 },
 ];
 
-export const orderStatuses: OrderStatus[] = ["Recebido", "Preparando", "Pronto", "Em Entrega", "Entregue"];
+export const orderStatuses: OrderStatus[] = ["Recebido", "Preparando", "Pronto", "Em Entrega", "Entregue", "Cancelado"];

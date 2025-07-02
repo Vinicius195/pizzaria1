@@ -15,6 +15,7 @@ import type { OrderStatus } from "@/types";
 import { cn } from "@/lib/utils";
 import { Package, ChefHat, Pizza, Bike, CheckCircle, XCircle, TrendingUp, DollarSign } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import Link from "next/link";
 
 type StatCard = {
   status: OrderStatus;
@@ -41,7 +42,7 @@ export default function DashboardPage() {
     .filter(order => order.status !== 'Cancelado')
     .reduce((acc, order) => acc + order.total, 0);
 
-  const totalOrders = mockOrders.length;
+  const totalOrders = mockOrders.filter(order => order.status !== 'Cancelado').length;
 
   const getStatusBadgeClasses = (status: OrderStatus): string => {
     switch (status) {
@@ -77,30 +78,34 @@ export default function DashboardPage() {
             <p className="text-xs text-muted-foreground">Soma de todos os pedidos não cancelados</p>
           </CardContent>
         </Card>
-        <Card className="shadow-md hover:shadow-lg transition-shadow lg:col-span-2">
-           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Pedidos Hoje</CardTitle>
-            <TrendingUp className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">+{totalOrders}</div>
-            <p className="text-xs text-muted-foreground">+5% em relação a ontem</p>
-          </CardContent>
-        </Card>
+        <Link href="/pedidos" className="lg:col-span-2">
+           <Card className="shadow-md hover:shadow-lg transition-shadow h-full">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total de Pedidos Válidos</CardTitle>
+              <TrendingUp className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">+{totalOrders}</div>
+              <p className="text-xs text-muted-foreground">+5% em relação a ontem</p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {statCards.map(({ status, title, icon: Icon, color }) => (
-          <Card key={status} className="shadow-md hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{title}</CardTitle>
-              <Icon className={cn("h-4 w-4", color)} />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{getOrderCountByStatus(status)}</div>
-               <p className="text-xs text-muted-foreground">Total de pedidos neste status</p>
-            </CardContent>
-          </Card>
+          <Link href={`/pedidos?status=${status}`} key={status}>
+            <Card className="shadow-md hover:shadow-lg transition-shadow h-full">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{title}</CardTitle>
+                <Icon className={cn("h-4 w-4", color)} />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{getOrderCountByStatus(status)}</div>
+                 <p className="text-xs text-muted-foreground">Total de pedidos neste status</p>
+              </CardContent>
+            </Card>
+          </Link>
         ))}
       </div>
       
