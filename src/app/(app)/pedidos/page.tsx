@@ -99,32 +99,24 @@ function PedidosPageContent() {
   const defaultValue = statusFilter && allTabs.includes(statusFilter) ? statusFilter : 'Todos';
 
   const handleAdvanceStatus = (orderId: string) => {
-    let nextStatus: OrderStatus | undefined;
+    const orderToUpdate = orders.find((o) => o.id === orderId);
+    if (!orderToUpdate) return;
 
-    setOrders(prevOrders => {
-      const orderIndex = prevOrders.findIndex(o => o.id === orderId);
-      if (orderIndex === -1) return prevOrders;
+    const currentStatusIndex = orderStatuses.indexOf(orderToUpdate.status);
+    if (orderToUpdate.status === 'Entregue' || orderToUpdate.status === 'Cancelado' || currentStatusIndex === -1) {
+      return;
+    }
 
-      const order = prevOrders[orderIndex];
-      const currentStatusIndex = orderStatuses.indexOf(order.status);
+    const nextStatusIndex = currentStatusIndex + 1;
+    if (nextStatusIndex < orderStatuses.length && orderStatuses[nextStatusIndex] !== 'Cancelado') {
+      const nextStatus = orderStatuses[nextStatusIndex];
       
-      if (order.status === 'Entregue' || order.status === 'Cancelado' || currentStatusIndex === -1) {
-        return prevOrders;
-      }
-      
-      const nextStatusIndex = currentStatusIndex + 1;
-      if (nextStatusIndex < orderStatuses.length && orderStatuses[nextStatusIndex] !== 'Cancelado') {
-        nextStatus = orderStatuses[nextStatusIndex];
-        const updatedOrder = { ...order, status: nextStatus };
-        const newOrders = [...prevOrders];
-        newOrders[orderIndex] = updatedOrder;
-        return newOrders;
-      }
-      
-      return prevOrders;
-    });
+      setOrders(prevOrders =>
+        prevOrders.map(order =>
+          order.id === orderId ? { ...order, status: nextStatus } : order
+        )
+      );
 
-    if (nextStatus) {
       toast({
         title: "Status do Pedido Atualizado!",
         description: `O pedido #${orderId} agora está: ${nextStatus}.`,
