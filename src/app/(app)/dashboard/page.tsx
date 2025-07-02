@@ -1,7 +1,7 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { mockOrders } from "@/lib/mock-data";
 import type { OrderStatus } from "@/types";
-import { Package, ChefHat, Pizza, Bike, CheckCircle, XCircle } from "lucide-react";
+import { Package, ChefHat, Pizza, Bike, CheckCircle, XCircle, DollarSign } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 type StatCard = {
@@ -12,12 +12,12 @@ type StatCard = {
 };
 
 const statCards: StatCard[] = [
-  { status: "Recebido", title: "Pedidos Recebidos", icon: Package, color: "text-blue-500" },
-  { status: "Preparando", title: "Em Preparo", icon: ChefHat, color: "text-yellow-500" },
-  { status: "Pronto", title: "Prontos para Entrega", icon: Pizza, color: "text-green-500" },
-  { status: "Em Entrega", title: "Em Rota de Entrega", icon: Bike, color: "text-purple-500" },
-  { status: "Entregue", title: "Pedidos Entregues", icon: CheckCircle, color: "text-gray-500" },
-  { status: "Cancelado", title: "Pedidos Cancelados", icon: XCircle, color: "text-red-500" },
+  { status: "Recebido", title: "Pedidos Recebidos", icon: Package, color: "text-chart-3" },
+  { status: "Preparando", title: "Em Preparo", icon: ChefHat, color: "text-chart-4" },
+  { status: "Pronto", title: "Prontos para Entrega", icon: Pizza, color: "text-chart-2" },
+  { status: "Em Entrega", title: "Em Rota de Entrega", icon: Bike, color: "text-primary" },
+  { status: "Entregue", title: "Pedidos Entregues", icon: CheckCircle, color: "text-muted-foreground" },
+  { status: "Cancelado", title: "Pedidos Cancelados", icon: XCircle, color: "text-destructive" },
 ];
 
 export default function DashboardPage() {
@@ -29,13 +29,11 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        <Card className="xl:col-span-1 shadow-md hover:shadow-lg transition-shadow">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="shadow-md hover:shadow-lg transition-shadow md:col-span-2 lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Faturamento do Dia</CardTitle>
-            <span className="text-green-500">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-            </span>
+            <DollarSign className="h-4 w-4 text-chart-2" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
