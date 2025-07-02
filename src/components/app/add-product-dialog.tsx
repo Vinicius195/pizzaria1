@@ -155,121 +155,123 @@ export function AddProductDialog({ open, onOpenChange, onSubmit, product }: AddP
           <DialogDescription>{dialogDescription}</DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 py-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome do Produto</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: Pizza de Calabresa" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="category"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Categoria</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione a categoria" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Pizza">Pizza</SelectItem>
-                      <SelectItem value="Bebida">Bebida</SelectItem>
-                      <SelectItem value="Adicional">Adicional</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             {category === 'Pizza' && (
+          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto p-1 pr-4">
               <FormField
                 control={form.control}
-                name="description"
+                name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Ingredientes (Descrição)</FormLabel>
+                    <FormLabel>Nome do Produto</FormLabel>
                     <FormControl>
-                      <Textarea
-                        placeholder="Molho de tomate, mussarela, calabresa, etc."
-                        {...field}
-                        value={field.value ?? ''}
-                      />
+                      <Input placeholder="Ex: Pizza de Calabresa" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            )}
-            
-            {category === 'Pizza' && (
-              <div className="space-y-4 rounded-md border p-4">
-                <FormLabel>Preços por Tamanho</FormLabel>
-                <div className="grid grid-cols-2 gap-4">
-                  {pizzaSizes.map((size) => (
-                    <FormField
-                      key={size}
-                      control={form.control}
-                      name={`sizes.${size}`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="capitalize font-normal">{size}</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground text-sm">R$</span>
-                              <Input
-                                type="number"
-                                step="0.01"
-                                placeholder="0,00"
-                                className="pl-8"
-                                {...field}
-                                value={field.value || ''}
-                                onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)}
-                              />
-                            </div>
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                  ))}
-                </div>
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Categoria</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a categoria" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Pizza">Pizza</SelectItem>
+                        <SelectItem value="Bebida">Bebida</SelectItem>
+                        <SelectItem value="Adicional">Adicional</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               {category === 'Pizza' && (
                 <FormField
                   control={form.control}
-                  name="sizes"
-                  render={() => <FormMessage />}
-                 />
-              </div>
-            )}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Ingredientes (Descrição)</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Molho de tomate, mussarela, calabresa, etc."
+                          {...field}
+                          value={field.value ?? ''}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+              
+              {category === 'Pizza' && (
+                <div className="space-y-4 rounded-md border p-4">
+                  <FormLabel>Preços por Tamanho</FormLabel>
+                  <div className="grid grid-cols-2 gap-4">
+                    {pizzaSizes.map((size) => (
+                      <FormField
+                        key={size}
+                        control={form.control}
+                        name={`sizes.${size}`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="capitalize font-normal">{size}</FormLabel>
+                            <FormControl>
+                              <div className="relative">
+                                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground text-sm">R$</span>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  placeholder="0,00"
+                                  className="pl-8"
+                                  {...field}
+                                  value={field.value || ''}
+                                  onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)}
+                                />
+                              </div>
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    ))}
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="sizes"
+                    render={() => <FormMessage />}
+                   />
+                </div>
+              )}
 
-            {category && category !== 'Pizza' && (
-              <FormField
-                control={form.control}
-                name="price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Preço</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground text-sm">R$</span>
-                        <Input type="number" step="0.01" placeholder="0,00" className="pl-8" {...field} value={field.value || ''} />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
+              {category && category !== 'Pizza' && (
+                <FormField
+                  control={form.control}
+                  name="price"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Preço</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground text-sm">R$</span>
+                          <Input type="number" step="0.01" placeholder="0,00" className="pl-8" {...field} value={field.value || ''} />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
 
-            <DialogFooter className="pt-4">
+            <DialogFooter className="pt-4 border-t">
               <DialogClose asChild>
                 <Button type="button" variant="ghost">Cancelar</Button>
               </DialogClose>
