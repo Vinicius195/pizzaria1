@@ -68,7 +68,7 @@ function OrderCard({
   const isActionDisabled = order.status === 'Entregue' || order.status === 'Cancelado';
 
   return (
-    <Card className={`shadow-md hover:shadow-lg transition-shadow border-l-4 bg-card ${getStatusColor(order.status)}`}>
+    <Card className={`shadow-md hover:shadow-lg transition-shadow border-l-4 bg-card ${getStatusColor(order.status)} flex flex-col`}>
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <div>
@@ -105,7 +105,7 @@ function OrderCard({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="py-2">
+      <CardContent className="py-2 flex-1">
         <ul className="space-y-1 text-sm">
           {order.items.map((item, index) => (
             <li key={index} className="flex justify-between">
@@ -113,42 +113,43 @@ function OrderCard({
             </li>
           ))}
         </ul>
-        <Separator className="my-3" />
-        <div className="flex justify-between font-bold text-sm">
-          <span>Total</span>
-          <span>{order.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-        </div>
       </CardContent>
-      <CardFooter className="flex justify-end gap-2">
-        <Button variant="outline" size="sm" onClick={() => onViewDetails(order)}>Detalhes</Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreHorizontal className="h-5 w-5" />
-              <span className="sr-only">Ações</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onClick={() => onAdvanceStatus(order.id)}
-              disabled={isActionDisabled}
-            >
-              Avançar Status
-            </DropdownMenuItem>
-            {isManager && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-destructive focus:bg-destructive focus:text-destructive-foreground"
-                  onClick={() => onCancelOrder(order.id)}
-                  disabled={isActionDisabled}
-                >
-                  Cancelar Pedido
-                </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+      <CardFooter className="flex justify-between items-center p-3 border-t">
+        <div>
+          <span className="text-muted-foreground text-xs">Total</span>
+          <p className="font-bold text-base">{order.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => onViewDetails(order)}>Detalhes</Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <MoreHorizontal className="h-5 w-5" />
+                <span className="sr-only">Ações</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => onAdvanceStatus(order.id)}
+                disabled={isActionDisabled}
+              >
+                Avançar Status
+              </DropdownMenuItem>
+              {isManager && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:bg-destructive focus:text-destructive-foreground"
+                    onClick={() => onCancelOrder(order.id)}
+                    disabled={isActionDisabled}
+                  >
+                    Cancelar Pedido
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </CardFooter>
     </Card>
   );
