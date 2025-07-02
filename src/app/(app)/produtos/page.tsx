@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription }
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { mockProducts } from '@/lib/mock-data';
-import type { Product, PizzaSize } from '@/types';
+import type { Product } from '@/types';
 import { MoreHorizontal, PlusCircle, Search, Pizza } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
@@ -15,13 +15,6 @@ import { AddProductDialog, type ProductFormValues } from '@/components/app/add-p
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useUser } from '@/contexts/user-context';
 import { Input } from '@/components/ui/input';
-
-const getProductDisplayName = (p: Product) => {
-  if (p.category === 'Bebida' && p.volume) {
-      return `${p.name} ${p.volume}`;
-  }
-  return p.name;
-};
 
 export default function ProdutosPage() {
   const [products, setProducts] = useState<Product[]>(mockProducts);
@@ -44,11 +37,11 @@ export default function ProdutosPage() {
 
     const filteredProducts = searchQuery
       ? availableProducts.filter(p =>
-          getProductDisplayName(p).toLowerCase().includes(searchQuery.toLowerCase())
+          p.name.toLowerCase().includes(searchQuery.toLowerCase())
         )
       : availableProducts;
     
-    const groupedProducts = filteredProducts.reduce((acc, product) => {
+    const groupedByCategory = filteredProducts.reduce((acc, product) => {
         const { category } = product;
         if (!acc[category]) {
           acc[category] = [];
@@ -79,22 +72,22 @@ export default function ProdutosPage() {
 
         <div className="space-y-8">
           {categoryOrder.map((category) => (
-            groupedProducts[category] && groupedProducts[category].length > 0 && (
+            groupedByCategory[category] && groupedByCategory[category].length > 0 && (
               <section key={category}>
                 <h2 className="text-2xl font-bold font-headline mb-4 pb-2 border-b-2 border-primary/20">
                   {category === 'Adicional' ? 'Adicionais' : `${category}s`}
                 </h2>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {groupedProducts[category].map((product) => (
+                  {groupedByCategory[category].map((product) => (
                     <Card key={product.id} className="shadow-md flex flex-col justify-between">
                       <CardHeader>
-                        <CardTitle className="text-lg font-headline">{getProductDisplayName(product)}</CardTitle>
-                        {product.category === 'Pizza' && product.description && (
+                        <CardTitle className="text-lg font-headline">{product.name}</CardTitle>
+                        {product.description && (
                           <CardDescription className="pt-1 text-sm">{product.description}</CardDescription>
                         )}
                       </CardHeader>
                       <CardContent>
-                        {product.category === 'Pizza' && product.sizes ? (
+                        {product.sizes ? (
                           <div className="space-y-2">
                             {Object.entries(product.sizes).map(([size, price]) => (
                               <div key={size} className="flex justify-between items-center text-sm">
@@ -160,7 +153,7 @@ export default function ProdutosPage() {
     setProducts(prev => [...prev, newProduct]);
     toast({
       title: "Produto Duplicado!",
-      description: `O produto "${getProductDisplayName(product)}" foi duplicado com sucesso.`,
+      description: `O produto "${product.name}" foi duplicado com sucesso.`,
     });
   };
 
@@ -170,34 +163,39 @@ export default function ProdutosPage() {
     toast({
       variant: "destructive",
       title: "Produto Deletado!",
-      description: `O produto "${getProductDisplayName(deletingProduct)}" foi removido.`,
+      description: `O produto "${deletingProduct.name}" foi removido.`,
     });
     setDeletingProduct(null);
   };
   
   const handleSubmitProduct = (data: ProductFormValues) => {
-    const commonData = {
-        name: data.name,
-        category: data.category,
-        description: data.description,
-    };
-
     let productData: Omit<Product, 'id' | 'isAvailable'>;
-
+    
     if (data.category === 'Pizza') {
         productData = {
-            ...commonData,
+            name: data.name,
             category: 'Pizza',
-            sizes: Object.fromEntries(
-                Object.entries(data.sizes || {}).filter(([, price]) => price && price > 0)
-            ) as Partial<Record<PizzaSize, number>>,
+            description: data.description,
+            sizes: data.pizzaSizes
         };
-    } else {
+    } else if (data.category === 'Bebida') {
+        const drinkSizes = data.drinkSizes?.reduce((acc, variant) => {
+            if (variant.name && variant.price) {
+                acc[variant.name] = variant.price;
+            }
+            return acc;
+        }, {} as Record<string, number>);
+
         productData = {
-            ...commonData,
-            category: data.category,
+            name: data.name,
+            category: 'Bebida',
+            sizes: drinkSizes,
+        };
+    } else { // Adicional
+        productData = {
+            name: data.name,
+            category: 'Adicional',
             price: data.price,
-            volume: data.volume,
         };
     }
 
@@ -210,7 +208,7 @@ export default function ProdutosPage() {
         );
         toast({
             title: "Produto Atualizado!",
-            description: `O produto "${getProductDisplayName(updatedProduct)}" foi atualizado com sucesso.`,
+            description: `O produto "${updatedProduct.name}" foi atualizado com sucesso.`,
         });
     } else {
         const newProduct: Product = {
@@ -221,7 +219,7 @@ export default function ProdutosPage() {
         setProducts(prev => [...prev, newProduct]);
         toast({
             title: "Produto Adicionado!",
-            description: `O produto "${getProductDisplayName(newProduct)}" foi adicionado com sucesso.`,
+            description: `O produto "${newProduct.name}" foi adicionado com sucesso.`,
         });
     }
   };
@@ -252,7 +250,7 @@ export default function ProdutosPage() {
             <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
             <AlertDialogDescription>
               Essa ação não pode ser desfeita. Isso irá deletar permanentemente o produto
-              <span className="font-bold"> "{deletingProduct ? getProductDisplayName(deletingProduct) : ''}"</span>.
+              <span className="font-bold"> "{deletingProduct ? deletingProduct.name : ''}"</span>.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -288,8 +286,8 @@ export default function ProdutosPage() {
                     <Card key={product.id} className="shadow-md hover:shadow-lg transition-shadow flex flex-col justify-between">
                       <div>
                         <CardHeader className="flex flex-row items-start justify-between pb-2">
-                          <CardTitle className="text-lg font-headline truncate" title={getProductDisplayName(product)}>
-                            {getProductDisplayName(product)}
+                          <CardTitle className="text-lg font-headline truncate" title={product.name}>
+                            {product.name}
                           </CardTitle>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -317,12 +315,12 @@ export default function ProdutosPage() {
                           </DropdownMenu>
                         </CardHeader>
                         <CardContent className="pt-0 pb-4 px-6">
-                          {product.category === 'Pizza' && product.description && (
+                          {product.description && (
                             <p className="text-sm text-muted-foreground my-2 line-clamp-2" title={product.description}>
                               {product.description}
                             </p>
                           )}
-                          {product.category === 'Pizza' && product.sizes && (
+                          {product.sizes && (
                             <div className="my-2 space-y-1">
                               {Object.entries(product.sizes).map(([size, price]) => (
                                 <div key={size} className="flex justify-between items-center text-sm">
@@ -334,17 +332,14 @@ export default function ProdutosPage() {
                               ))}
                             </div>
                           )}
-                          <div className="flex items-center justify-between pt-2">
-                            <Badge variant="outline">{product.category}</Badge>
-                            {product.category !== 'Pizza' && product.price && (
-                              <div className="text-lg font-bold">
+                           {product.price && (
+                              <div className="text-lg font-bold text-right pt-2">
                                 {product.price.toLocaleString('pt-BR', {
                                   style: 'currency',
                                   currency: 'BRL',
                                 })}
                               </div>
                             )}
-                          </div>
                         </CardContent>
                       </div>
                       <CardFooter className="flex justify-between items-center bg-muted/50 py-3 px-4 border-t">

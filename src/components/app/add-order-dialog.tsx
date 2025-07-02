@@ -43,7 +43,7 @@ const orderItemSchema = z.object({
   product2Id: z.string().optional(), // For the second half
   isHalfHalf: z.boolean().default(false),
   quantity: z.coerce.number().min(1, "A quantidade deve ser pelo menos 1."),
-  size: z.custom<PizzaSize>().optional(),
+  size: z.string().optional(),
 });
 
 const addOrderSchema = z.object({
@@ -60,16 +60,18 @@ const addOrderSchema = z.object({
 }).superRefine((data, ctx) => {
     data.items.forEach((item, index) => {
       const product1 = mockProducts.find(p => p.id === item.productId);
+      if (!product1) return;
 
       if (item.isHalfHalf) {
-          const product2 = mockProducts.find(p => p.id === item.product2Id);
-          if (!product1 || product1.category !== 'Pizza') {
+          if (product1.category !== 'Pizza') {
              ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 message: "O primeiro sabor deve ser uma pizza.",
                 path: [`items`, index, `productId`],
              });
           }
+
+          const product2 = mockProducts.find(p => p.id === item.product2Id);
            if (!item.product2Id) {
              ctx.addIssue({
                 code: z.ZodIssueCode.custom,
@@ -91,17 +93,17 @@ const addOrderSchema = z.object({
                 path: [`items`, index, `size`],
             });
           }
-      } else if (product1?.category === 'Pizza') {
+      } else if (product1.sizes) {
         if (!item.size) {
            ctx.addIssue({
               code: z.ZodIssueCode.custom,
-              message: "Selecione o tamanho da pizza.",
+              message: "Selecione o tamanho.",
               path: [`items`, index, `size`],
            });
-        } else if (!product1.sizes || !product1.sizes[item.size]) {
+        } else if (!product1.sizes[item.size]) {
              ctx.addIssue({
                 code: z.ZodIssueCode.custom,
-                message: "Tamanho indisponível para esta pizza.",
+                message: "Tamanho indisponível para este produto.",
                 path: [`items`, index, `size`],
              });
         }
@@ -193,13 +195,6 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
     },
     {} as Record<Product['category'], Product[]>
   );
-  
-  const getProductDisplayName = (product: Product): string => {
-    if (product.category === 'Bebida' && product.volume) {
-        return `${product.name} ${product.volume}`;
-    }
-    return product.name;
-  };
 
   const handleClose = () => {
     form.reset();
@@ -388,7 +383,7 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
                 <div className="space-y-3 mt-2">
                   {fields.map((field, index) => {
                     const selectedProduct = availableProducts.find(p => p.id === watchedItems[index]?.productId);
-                    const isFirstFlavorPizza = selectedProduct?.category === 'Pizza';
+                    const isPizza = selectedProduct?.category === 'Pizza';
                     const isHalfHalf = watchedItems[index]?.isHalfHalf ?? false;
                     return (
                       <div key={field.id} className="flex flex-col gap-3 rounded-md border p-4">
@@ -411,9 +406,9 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
                                         )}
                                       >
                                         {field.value
-                                          ? getProductDisplayName(availableProducts.find(
+                                          ? availableProducts.find(
                                               (product) => product.id === field.value
-                                            )!)
+                                            )?.name
                                           : "Selecione um produto"}
                                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                       </Button>
@@ -428,7 +423,7 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
                                           <CommandGroup key={category} heading={category}>
                                             {products.map((product) => (
                                               <CommandItem
-                                                value={getProductDisplayName(product)}
+                                                value={product.name}
                                                 key={product.id}
                                                 onSelect={() => {
                                                   form.setValue(`items.${index}.productId`, product.id, { shouldValidate: true });
@@ -446,7 +441,7 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
                                                       : "opacity-0"
                                                   )}
                                                 />
-                                                {getProductDisplayName(product)}
+                                                {product.name}
                                               </CommandItem>
                                             ))}
                                           </CommandGroup>
@@ -477,7 +472,7 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
                           </Button>
                         </div>
 
-                        {isFirstFlavorPizza && (
+                        {isPizza && (
                             <FormField
                                 control={form.control}
                                 name={`items.${index}.isHalfHalf`}
@@ -567,7 +562,7 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
                             />
                         )}
 
-                        {isFirstFlavorPizza && (
+                        {selectedProduct && selectedProduct.sizes && (
                             <FormField
                                 control={form.control}
                                 name={`items.${index}.size`}
@@ -582,7 +577,7 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
                                     >
                                         {Object.keys(selectedProduct.sizes!)
                                             .filter(
-                                                (size) => getMockSettings().sizeAvailability[size as PizzaSize]
+                                                (size) => selectedProduct.category !== 'Pizza' || getMockSettings().sizeAvailability[size as PizzaSize]
                                             )
                                             .map((size) => (
                                             <FormItem key={size} className="flex items-center space-x-2 space-y-0">

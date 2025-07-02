@@ -8,9 +8,10 @@ export interface Product {
   id: string;
   name: string;
   category: 'Pizza' | 'Bebida' | 'Adicional';
-  price?: number; // For non-pizza items
-  sizes?: Partial<Record<PizzaSize, number>>; // For pizza items
-  volume?: string; // For drinks, e.g., "2L", "350ml"
+  // For items with multiple sizes/volumes like Pizzas and Drinks
+  sizes?: Record<string, number>;
+  // For simple items with a single price, like Adicionais
+  price?: number;
   isAvailable: boolean;
   description?: string;
 };
@@ -30,7 +31,7 @@ export interface Order {
   id: string;
   customerName: string;
   customerPhone?: string;
-  items: { productName: string; quantity: number, size?: PizzaSize }[];
+  items: { productName: string; quantity: number, size?: string }[];
   total: number;
   status: OrderStatus;
   timestamp: string;

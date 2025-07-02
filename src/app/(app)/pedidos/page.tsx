@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { mockOrders, orderStatuses, mockProducts } from '@/lib/mock-data';
-import type { Order, OrderStatus, PizzaSize, Product } from '@/types';
+import type { Order, OrderStatus } from '@/types';
 import { Clock, PlusCircle, Bike, MoreHorizontal, Search, MessageSquare, ChefHat, Pizza as PizzaIcon, Package } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AddOrderDialog, type AddOrderFormValues } from '@/components/app/add-order-dialog';
@@ -235,13 +235,6 @@ function PedidosPageContent() {
   const handleViewDetails = (order: Order) => {
     setSelectedOrder(order);
   };
-  
-  const getProductDisplayName = (p: Product) => {
-    if (p.category === 'Bebida' && p.volume) {
-        return `${p.name} ${p.volume}`;
-    }
-    return p.name;
-  };
 
   const handleAddOrder = (data: AddOrderFormValues) => {
     const orderItemsWithDetails = data.items.map(item => {
@@ -263,13 +256,13 @@ function PedidosPageContent() {
                 price: finalPrice,
             };
         }
-
-        const price = (product1.category === 'Pizza' && item.size && product1.sizes)
+        
+        const price = (product1.sizes && item.size) 
             ? product1.sizes[item.size] || 0
             : product1.price || 0;
 
         return {
-            productName: getProductDisplayName(product1),
+            productName: product1.name,
             quantity: item.quantity,
             size: item.size,
             price: price,
@@ -284,7 +277,7 @@ function PedidosPageContent() {
         id: newOrderId,
         customerName: data.customerName,
         customerPhone: data.customerPhone,
-        items: orderItemsWithDetails.map(({ productName, quantity, size }) => ({ productName, quantity, size: size as PizzaSize | undefined })),
+        items: orderItemsWithDetails.map(({ productName, quantity, size }) => ({ productName, quantity, size })),
         total,
         status: 'Recebido',
         timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
