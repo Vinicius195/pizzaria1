@@ -21,7 +21,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
 
 const loginSchema = z.object({
-  email: z.string().email("Por favor, insira um e-mail válido."),
+  email: z.string().min(1, "Por favor, insira seu nome de usuário.").refine(s => !s.includes('@'), 'Apenas o nome de usuário, sem o domínio.'),
   password: z.string().min(1, "A senha é obrigatória."),
 });
 
@@ -42,7 +42,8 @@ export default function LoginPage() {
 
   const handleLogin = (data: LoginFormValues) => {
     setLoginError(null);
-    const result = login(data.email, data.password);
+    const fullEmail = `${data.email}@belamassa.com`;
+    const result = login(fullEmail, data.password);
     if (result.success) {
       router.push('/dashboard');
     } else {
@@ -83,7 +84,17 @@ export default function LoginPage() {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="Ex: sergio.lemos@belamassa.com" {...field} />
+                        <div className="flex items-center rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+                            <Input
+                                type="text"
+                                placeholder="sergio.lemos"
+                                className="flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                                {...field}
+                            />
+                            <span className="self-stretch border-l bg-muted px-3 flex items-center text-sm text-muted-foreground">
+                                @belamassa.com
+                            </span>
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>

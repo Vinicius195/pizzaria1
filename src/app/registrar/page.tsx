@@ -24,7 +24,7 @@ import type { UserRole } from '@/types';
 
 const registerSchema = z.object({
   name: z.string().min(3, "O nome deve ter pelo menos 3 caracteres."),
-  email: z.string().email("Por favor, insira um e-mail válido."),
+  email: z.string().min(1, "Por favor, insira seu nome de usuário.").refine(s => !s.includes('@'), 'Apenas o nome de usuário, sem o domínio.'),
   password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres."),
   role: z.enum(['Administrador', 'Funcionário'], {
     required_error: "Selecione um tipo de conta.",
@@ -49,9 +49,10 @@ export default function RegisterPage() {
 
   const handleRegister = (data: RegisterFormValues) => {
     setFormFeedback(null);
+    const fullEmail = `${data.email}@belamassa.com`;
     const result = registerUser({
         name: data.name,
-        email: data.email,
+        email: fullEmail,
         password: data.password,
         role: data.role as UserRole,
     });
@@ -111,7 +112,17 @@ export default function RegisterPage() {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="seu@email.com" {...field} />
+                        <div className="flex items-center rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+                            <Input
+                                type="text"
+                                placeholder="seu.nome"
+                                className="flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                                {...field}
+                            />
+                            <span className="self-stretch border-l bg-muted px-3 flex items-center text-sm text-muted-foreground">
+                                @belamassa.com
+                            </span>
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
