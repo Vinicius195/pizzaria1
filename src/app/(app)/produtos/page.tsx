@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { mockProducts } from '@/lib/mock-data';
@@ -114,14 +114,26 @@ export default function ProdutosPage() {
 
   const groupedProducts = products.reduce((acc, product) => {
     const { category } = product;
+    if (category === 'Bebida') return acc; // Bebidas são tratadas separadamente
     if (!acc[category]) {
       acc[category] = [];
     }
     acc[category].push(product);
     return acc;
-  }, {} as Record<Product['category'], Product[]>);
+  }, {} as Record<'Pizza' | 'Adicional', Product[]>);
 
-  const categoryOrder: (Product['category'])[] = ['Pizza', 'Bebida', 'Adicional'];
+  const drinkGroups = products
+    .filter((p) => p.category === 'Bebida')
+    .reduce((acc, product) => {
+        const price = product.price || 0;
+        if (!acc[price]) {
+            acc[price] = [];
+        }
+        acc[price].push(product);
+        return acc;
+    }, {} as Record<number, Product[]>);
+
+  const categoryOrder: ('Pizza' | 'Adicional')[] = ['Pizza', 'Adicional'];
 
   return (
     <>
@@ -248,6 +260,69 @@ export default function ProdutosPage() {
               </section>
             )
           ))}
+
+          {Object.keys(drinkGroups).length > 0 && (
+            <section>
+              <h2 className="text-2xl font-bold font-headline mb-4 pb-2 border-b-2 border-primary/20">
+                Bebidas
+              </h2>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+                {Object.entries(drinkGroups).map(([price, drinkList]) => (
+                  <Card key={price} className="shadow-md hover:shadow-lg transition-shadow flex flex-col">
+                    <CardHeader>
+                      <CardTitle className="text-lg font-headline">Bebidas</CardTitle>
+                       <CardDescription className="text-base font-semibold text-foreground">
+                        {Number(price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-0 pb-4 px-6 flex-1">
+                      <div className="space-y-3">
+                        {drinkList.map((drink) => (
+                          <div key={drink.id} className="flex items-center justify-between gap-2">
+                            <Label htmlFor={`available-${drink.id}`} className="font-normal text-sm truncate" title={drink.name}>
+                              {drink.name}
+                            </Label>
+                            <div className="flex items-center shrink-0">
+                               <Switch
+                                id={`available-${drink.id}`}
+                                checked={drink.isAvailable}
+                                onCheckedChange={(checked) => handleToggleAvailable(drink.id, checked)}
+                                aria-label={`Disponibilidade do produto ${drink.name}`}
+                              />
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button aria-haspopup="true" size="icon" variant="ghost" className="h-8 w-8">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                    <span className="sr-only">Toggle menu for {drink.name}</span>
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                                  <DropdownMenuItem onClick={() => handleOpenEditDialog(drink)}>
+                                    Editar
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleDuplicateProduct(drink)}>
+                                    Duplicar
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    className="text-destructive focus:text-destructive-foreground focus:bg-destructive"
+                                    onClick={() => setDeletingProduct(drink)}
+                                  >
+                                    Deletar
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       </div>
     </>
