@@ -220,8 +220,8 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-4 max-h-[60vh] overflow-y-auto p-1 pr-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="space-y-6 max-h-[70vh] sm:max-h-[65vh] overflow-y-auto p-1 pr-2 sm:pr-4">
                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -380,7 +380,7 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
               
               <div>
                 <FormLabel>Itens do Pedido</FormLabel>
-                <div className="space-y-3 mt-2">
+                <div className="space-y-4 mt-2">
                   {fields.map((field, index) => {
                     const selectedProduct = availableProducts.find(p => p.id === watchedItems[index]?.productId);
                     const isPizza = selectedProduct?.category === 'Pizza';
@@ -602,7 +602,7 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="mt-3"
+                  className="mt-4"
                   onClick={() => append({ productId: '', product2Id: undefined, isHalfHalf: false, quantity: 1, size: undefined })}
                 >
                   <PlusCircle className="mr-2 h-4 w-4" />

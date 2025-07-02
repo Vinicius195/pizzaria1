@@ -171,7 +171,7 @@ export function AddProductDialog({ open, onOpenChange, onSubmit, product }: AddP
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
-            <div className="space-y-4 overflow-y-auto p-1 pr-4 max-h-[60vh]">
+            <div className="space-y-4 overflow-y-auto p-1 pr-2 sm:pr-4 max-h-[70vh] sm:max-h-[60vh]">
               <FormField
                 control={form.control}
                 name="name"
@@ -229,7 +229,7 @@ export function AddProductDialog({ open, onOpenChange, onSubmit, product }: AddP
                   />
                   <div className="space-y-4 rounded-md border p-4">
                     <FormLabel>Preços por Tamanho</FormLabel>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {pizzaSizes.map((size) => (
                         <FormField
                           key={size}
@@ -261,42 +261,44 @@ export function AddProductDialog({ open, onOpenChange, onSubmit, product }: AddP
               {category === 'Bebida' && (
                   <div className="space-y-4 rounded-md border p-4">
                      <FormLabel>Tamanhos / Volumes</FormLabel>
-                     {fields.map((field, index) => (
-                       <div key={field.id} className="flex items-end gap-2">
-                          <FormField
-                            control={form.control}
-                            name={`drinkSizes.${index}.name`}
-                            render={({ field }) => (
-                                <FormItem className='flex-1'>
-                                    <FormLabel className='text-xs'>Volume</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="Ex: 2L" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name={`drinkSizes.${index}.price`}
-                            render={({ field }) => (
-                                <FormItem>
-                                     <FormLabel className='text-xs'>Preço</FormLabel>
-                                    <FormControl>
-                                        <div className="relative">
-                                            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground text-sm">R$</span>
-                                            <Input type="number" step="0.01" placeholder="0,00" className="pl-8 w-28" {...field} />
-                                        </div>
-                                    </FormControl>
-                                     <FormMessage />
-                                </FormItem>
-                            )}
-                          />
-                          <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                       </div>
-                     ))}
+                     <div className="space-y-3">
+                        {fields.map((field, index) => (
+                          <div key={field.id} className="flex flex-col sm:flex-row items-stretch sm:items-end gap-2">
+                              <FormField
+                                control={form.control}
+                                name={`drinkSizes.${index}.name`}
+                                render={({ field }) => (
+                                    <FormItem className='flex-1'>
+                                        <FormLabel className='text-xs'>Volume</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="Ex: 2L, Lata" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name={`drinkSizes.${index}.price`}
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className='text-xs'>Preço</FormLabel>
+                                        <FormControl>
+                                            <div className="relative">
+                                                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground text-sm">R$</span>
+                                                <Input type="number" step="0.01" placeholder="0,00" className="pl-8 w-full sm:w-28" {...field} />
+                                            </div>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                              />
+                              <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="self-end">
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                          </div>
+                        ))}
+                     </div>
                      <Button type="button" variant="outline" size="sm" onClick={() => append({ name: '', price: 0 })}>
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Adicionar Tamanho

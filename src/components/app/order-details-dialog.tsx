@@ -15,6 +15,7 @@ import { Separator } from '@/components/ui/separator';
 import type { Order, OrderStatus } from '@/types';
 import { cn } from '@/lib/utils';
 import { Clock, User, Tag, ShoppingCart, DollarSign, Bike, Store, MapPin, Link as LinkIcon, MessageSquare, Phone } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface OrderDetailsDialogProps {
   order: Order | null;
@@ -39,7 +40,19 @@ const getStatusBadgeClasses = (status: OrderStatus): string => {
       default:
         return "bg-secondary text-secondary-foreground";
     }
-  };
+};
+
+const DetailRow = ({ icon: Icon, label, children }: { icon: LucideIcon; label: string; children: React.ReactNode }) => (
+    <div className="flex flex-col items-start gap-1 sm:grid sm:grid-cols-2 sm:items-center">
+        <div className="flex items-center gap-2 text-muted-foreground">
+            <Icon className="h-4 w-4" />
+            <span className="text-sm">{label}</span>
+        </div>
+        <div className="font-medium text-foreground/90 pl-6 sm:pl-0 sm:text-right">
+            {children}
+        </div>
+    </div>
+);
 
 export function OrderDetailsDialog({ order, open, onOpenChange }: OrderDetailsDialogProps) {
   if (!order) return null;
@@ -53,47 +66,44 @@ export function OrderDetailsDialog({ order, open, onOpenChange }: OrderDetailsDi
             Informações completas sobre o pedido.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto pr-4">
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-2 text-muted-foreground"><User className="h-4 w-4" /> Cliente</span>
-            <span className="font-medium">{order.customerName}</span>
-          </div>
-           {order.customerPhone && (
-            <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2 text-muted-foreground"><Phone className="h-4 w-4" /> Telefone</span>
-                <a href={`tel:${order.customerPhone}`} className="font-medium text-primary underline hover:text-primary/80">
-                  {order.customerPhone}
-                </a>
-            </div>
-           )}
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-2 text-muted-foreground"><Clock className="h-4 w-4" /> Horário</span>
-            <span className="font-medium">{order.timestamp}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-2 text-muted-foreground"><Tag className="h-4 w-4" /> Status</span>
-            <Badge variant="outline" className={cn("text-xs", getStatusBadgeClasses(order.status))}>
-                {order.status}
-            </Badge>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-2 text-muted-foreground"><Store className="h-4 w-4" /> Tipo</span>
-            <span className="font-medium capitalize flex items-center gap-1.5">
-                {order.orderType === 'entrega' ? <Bike className="h-4 w-4" /> : <Store className="h-4 w-4" />}
-                {order.orderType === 'entrega' ? 'Entrega' : 'Retirada'}
-            </span>
+        <div className="space-y-6 py-4 max-h-[70vh] sm:max-h-[65vh] overflow-y-auto pr-2 sm:pr-4">
+          <div className="space-y-3">
+             <DetailRow icon={User} label="Cliente">
+                {order.customerName}
+            </DetailRow>
+            {order.customerPhone && (
+                <DetailRow icon={Phone} label="Telefone">
+                     <a href={`tel:${order.customerPhone}`} className="text-primary underline hover:text-primary/80">
+                        {order.customerPhone}
+                    </a>
+                </DetailRow>
+            )}
+             <DetailRow icon={Clock} label="Horário">
+                {order.timestamp}
+            </DetailRow>
+            <DetailRow icon={Tag} label="Status">
+                <Badge variant="outline" className={cn("text-xs", getStatusBadgeClasses(order.status))}>
+                    {order.status}
+                </Badge>
+            </DetailRow>
+            <DetailRow icon={order.orderType === 'entrega' ? Bike : Store} label="Tipo">
+                <span className="capitalize">{order.orderType}</span>
+            </DetailRow>
           </div>
           
           {order.orderType === 'entrega' && (order.address || order.locationLink) && (
             <>
               <Separator />
               <div className="space-y-2">
-                <h4 className="flex items-center gap-2 font-medium text-muted-foreground"><MapPin className="h-4 w-4" /> Endereço</h4>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                    <MapPin className="h-4 w-4" />
+                    <span className="text-sm font-medium">Endereço de Entrega</span>
+                </div>
                 {order.address && (
-                  <p className="text-sm text-right">{order.address}</p>
+                  <p className="text-sm text-foreground/90 pl-6">{order.address}</p>
                 )}
                 {order.locationLink && (
-                  <div className="flex justify-end">
+                  <div className="pl-6">
                     <Button asChild variant="link" className="h-auto p-0 text-sm">
                       <a
                         href={order.locationLink}
@@ -113,11 +123,14 @@ export function OrderDetailsDialog({ order, open, onOpenChange }: OrderDetailsDi
 
           <Separator />
           
-          <div>
-            <h4 className="flex items-center gap-2 mb-2 font-medium text-muted-foreground"><ShoppingCart className="h-4 w-4" /> Itens</h4>
-            <ul className="space-y-1 text-sm list-disc list-inside pl-2">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-muted-foreground">
+                <ShoppingCart className="h-4 w-4" />
+                <span className="text-sm font-medium">Itens</span>
+            </div>
+            <ul className="space-y-1 text-sm list-disc list-inside text-foreground/90 pl-8">
               {order.items.map((item, index) => (
-                <li key={index} className="flex justify-between">
+                <li key={index}>
                   <span>{item.quantity}x {item.productName} {item.size && <span className='capitalize'>({item.size})</span>}</span>
                 </li>
               ))}
@@ -128,22 +141,24 @@ export function OrderDetailsDialog({ order, open, onOpenChange }: OrderDetailsDi
             <>
               <Separator />
               <div className="space-y-2">
-                <h4 className="flex items-center gap-2 font-medium text-muted-foreground"><MessageSquare className="h-4 w-4" /> Observações</h4>
-                <p className="text-sm text-foreground/90 whitespace-pre-wrap">{order.notes}</p>
+                 <div className="flex items-center gap-2 text-muted-foreground">
+                    <MessageSquare className="h-4 w-4" />
+                    <span className="text-sm font-medium">Observações</span>
+                </div>
+                <p className="text-sm text-foreground/90 whitespace-pre-wrap pl-6">{order.notes}</p>
               </div>
             </>
           )}
           
           <Separator />
           
-          <div className="flex items-center justify-between text-lg font-bold">
-            <span className="flex items-center gap-2"><DollarSign className="h-5 w-5" /> Total</span>
-            <span>{order.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-          </div>
+           <DetailRow icon={DollarSign} label="Total do Pedido">
+                <span className="text-lg font-bold">{order.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+           </DetailRow>
         </div>
-        <DialogFooter>
+        <DialogFooter className="border-t pt-4">
           <DialogClose asChild>
-            <Button type="button" variant="outline">Fechar</Button>
+            <Button type="button" variant="outline" className="w-full sm:w-auto">Fechar</Button>
           </DialogClose>
         </DialogFooter>
       </DialogContent>
