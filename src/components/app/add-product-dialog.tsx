@@ -113,23 +113,21 @@ export function AddProductDialog({ open, onOpenChange, onSubmit, product }: AddP
           },
         });
       } else {
+        // For new products, just reset the form.
+        // The other useEffect will handle prices based on category.
         form.reset({
           name: '',
           category: undefined,
           price: 0,
           description: '',
-          sizes: {
-            pequeno: 0,
-            medio: 0,
-            grande: 0,
-            GG: 0,
-          }
+          sizes: { pequeno: 0, medio: 0, grande: 0, GG: 0 }
         });
       }
     }
   }, [product, open, form]);
 
   useEffect(() => {
+    // This effect runs when category changes for a new product.
     if (!product && category === 'Pizza') {
       form.setValue('sizes', getMockSettings().basePrices);
     }
@@ -156,7 +154,7 @@ export function AddProductDialog({ open, onOpenChange, onSubmit, product }: AddP
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
-            <div className="space-y-4 max-h-[60vh] overflow-y-auto p-1 pr-4">
+            <div className="space-y-4 overflow-y-auto p-1 pr-4" style={{ maxHeight: 'calc(80vh - 200px)' }}>
               <FormField
                 control={form.control}
                 name="name"
