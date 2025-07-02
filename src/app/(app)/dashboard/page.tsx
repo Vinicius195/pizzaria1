@@ -27,7 +27,7 @@ type StatCard = {
 const statCards: StatCard[] = [
   { status: "Recebido", title: "Pedidos Recebidos", icon: Package, color: "text-chart-3" },
   { status: "Preparando", title: "Em Preparo", icon: ChefHat, color: "text-chart-4" },
-  { status: "Pronto", title: "Prontos para Entrega", icon: Pizza, color: "text-chart-2" },
+  { status: "Pronto", title: "Pedidos Prontos", icon: Pizza, color: "text-chart-2" },
   { status: "Em Entrega", title: "Em Rota de Entrega", icon: Bike, color: "text-primary" },
   { status: "Entregue", title: "Pedidos Entregues", icon: CheckCircle, color: "text-muted-foreground" },
   { status: "Cancelado", title: "Pedidos Cancelados", icon: XCircle, color: "text-destructive" },
