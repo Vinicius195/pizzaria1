@@ -27,11 +27,14 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
 import { mockProducts } from '@/lib/mock-data';
+import type { Product } from '@/types';
 import { Link, PlusCircle, Trash2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
@@ -111,6 +114,19 @@ export function AddOrderDialog({ open, onOpenChange }: AddOrderDialogProps) {
 
   const orderType = form.watch('orderType');
   const addressType = form.watch('addressType');
+
+  const availableProducts = mockProducts.filter((p) => p.isAvailable);
+  const groupedProducts = availableProducts.reduce(
+    (acc, product) => {
+      const { category } = product;
+      if (!acc[category]) {
+        acc[category] = [];
+      }
+      acc[category].push(product);
+      return acc;
+    },
+    {} as Record<Product['category'], Product[]>
+  );
   
   const handleClose = () => {
     form.reset();
@@ -291,9 +307,14 @@ export function AddOrderDialog({ open, onOpenChange }: AddOrderDialogProps) {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                {mockProducts.filter(p => p.isAvailable).map(product => (
-                                  <SelectItem key={product.id} value={product.id}>{product.name}</SelectItem>
-                                ))}
+                                {Object.entries(groupedProducts).map(([category, products]) => (
+                                    <SelectGroup key={category}>
+                                      <SelectLabel>{category}</SelectLabel>
+                                      {products.map((product) => (
+                                        <SelectItem key={product.id} value={product.id}>{product.name}</SelectItem>
+                                      ))}
+                                    </SelectGroup>
+                                  ))}
                               </SelectContent>
                             </Select>
                             <FormMessage />
