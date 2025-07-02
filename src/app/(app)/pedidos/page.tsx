@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { mockOrders, orderStatuses, mockProducts } from '@/lib/mock-data';
 import type { Order, OrderStatus } from '@/types';
-import { Clock, PlusCircle, Bike, MoreHorizontal } from 'lucide-react';
+import { Clock, PlusCircle, Bike, MoreHorizontal, Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AddOrderDialog, type AddOrderFormValues } from '@/components/app/add-order-dialog';
 import { OrderDetailsDialog } from '@/components/app/order-details-dialog';
@@ -33,6 +33,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 
 function OrderCard({ 
   order, 
@@ -140,6 +141,7 @@ function PedidosPageContent() {
     mockOrders.slice().sort((a, b) => parseInt(a.id, 10) - parseInt(b.id, 10))
   );
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   
   const allTabs = ['Todos', ...orderStatuses];
   const defaultValue = statusFilter && allTabs.includes(statusFilter) ? statusFilter : 'Todos';
@@ -216,6 +218,10 @@ function PedidosPageContent() {
     setOrders(prevOrders => [...prevOrders, newOrder]);
   };
 
+  const filteredOrders = orders.filter(order =>
+    order.customerName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <>
       <AddOrderDialog 
@@ -229,12 +235,23 @@ function PedidosPageContent() {
         onOpenChange={() => setSelectedOrder(null)}
       />
 
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <h1 className="text-3xl font-bold font-headline">Pedidos</h1>
-        <Button onClick={() => setIsAddOrderDialogOpen(true)}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Adicionar Pedido
-        </Button>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="relative flex-grow">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por cliente..."
+              className="pl-10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <Button onClick={() => setIsAddOrderDialogOpen(true)}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Adicionar Pedido
+          </Button>
+        </div>
       </div>
       <Tabs defaultValue={defaultValue} className="w-full">
         <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 md:grid-cols-7">
@@ -244,7 +261,7 @@ function PedidosPageContent() {
           ))}
         </TabsList>
         <TabsContent value="Todos" className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {orders.map(order => (
+          {filteredOrders.map(order => (
             <OrderCard 
               key={order.id} 
               order={order} 
@@ -256,7 +273,7 @@ function PedidosPageContent() {
         </TabsContent>
         {orderStatuses.map(status => (
           <TabsContent key={status} value={status} className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {orders.filter(order => order.status === status).map(order => (
+            {filteredOrders.filter(order => order.status === status).map(order => (
               <OrderCard 
                 key={order.id} 
                 order={order} 
