@@ -148,23 +148,37 @@ function PedidosPageContent() {
 
   const handleAdvanceStatus = (orderId: string) => {
     let nextStatus: OrderStatus | undefined;
-    
+
     setOrders(prevOrders =>
       prevOrders.map(order => {
-        if (order.id === orderId) {
-          const currentStatusIndex = orderStatuses.indexOf(order.status);
-          const isActionable = order.status !== 'Entregue' && order.status !== 'Cancelado' && currentStatusIndex !== -1;
-          
-          if (isActionable && currentStatusIndex + 1 < orderStatuses.length) {
-            nextStatus = orderStatuses[currentStatusIndex + 1];
+        if (order.id !== orderId) return order;
+
+        const currentStatusIndex = orderStatuses.indexOf(order.status);
+        const isActionable = order.status !== 'Entregue' && order.status !== 'Cancelado' && currentStatusIndex !== -1;
+
+        if (!isActionable) return order;
+
+        // Skip "Em Entrega" for pickup orders
+        if (order.status === 'Pronto' && order.orderType === 'retirada') {
+          nextStatus = 'Entregue';
+          return { ...order, status: 'Entregue' };
+        }
+
+        // Default advancement
+        const nextStatusIndex = currentStatusIndex + 1;
+        if (nextStatusIndex < orderStatuses.length) {
+          const potentialNextStatus = orderStatuses[nextStatusIndex];
+          if (potentialNextStatus !== 'Cancelado') {
+            nextStatus = potentialNextStatus;
             return { ...order, status: nextStatus };
           }
         }
+
         return order;
       })
     );
-      
-    if (nextStatus && nextStatus !== 'Cancelado') {
+
+    if (nextStatus) {
       toast({
         title: "Status do Pedido Atualizado!",
         description: `O pedido #${orderId} agora está: ${nextStatus}.`,
