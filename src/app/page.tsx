@@ -33,7 +33,7 @@ export default function LoginPage() {
               <Pizza className="h-12 w-12 text-primary" />
             </div>
             <CardTitle className="font-headline text-3xl">
-              PizzaFast Manager
+              Pizzaria Bela Massa
             </CardTitle>
             <CardDescription>
               Faça login para gerenciar sua pizzaria

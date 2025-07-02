@@ -25,7 +25,7 @@ export function AppSidebar() {
         <div className="flex items-center gap-2 p-2 justify-center group-data-[collapsible=icon]:justify-start">
           <Pizza className="h-8 w-8 text-primary" />
           <h2 className="font-headline text-2xl font-bold text-primary group-data-[collapsible=icon]:hidden">
-            PizzaFast
+            Bela Massa
           </h2>
         </div>
       </SidebarHeader>

@@ -8,13 +8,15 @@ import { LogOut, Settings, User, Users, Bike } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
+import { ThemeToggle } from '../theme-toggle';
 
 const getPageTitle = (pathname: string) => {
   if (pathname.startsWith('/dashboard')) return 'Dashboard';
   if (pathname.startsWith('/pedidos')) return 'Pedidos';
   if (pathname.startsWith('/produtos')) return 'Produtos';
   if (pathname.startsWith('/clientes')) return 'Clientes';
-  return 'PizzaFast Manager';
+  if (pathname.startsWith('/configuracoes')) return 'Configurações';
+  return 'Pizzaria Bela Massa';
 };
 
 type UserProfile = {
@@ -44,7 +46,8 @@ export function AppHeader() {
         <SidebarTrigger className="md:hidden" />
         <h1 className="font-headline text-xl font-semibold">{title}</h1>
       </div>
-      <div className="ml-auto flex items-center gap-4">
+      <div className="ml-auto flex items-center gap-2">
+        <ThemeToggle />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-10 w-10 rounded-full">
