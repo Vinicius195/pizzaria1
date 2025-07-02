@@ -28,10 +28,3 @@ export const mockCustomers: Customer[] = [
 ];
 
 export const orderStatuses: OrderStatus[] = ["Recebido", "Preparando", "Pronto", "Em Entrega", "Entregue", "Cancelado"];
-
-export const basePizzaPrices: Record<PizzaSize, number> = {
-  pequeno: 35.00,
-  medio: 45.00,
-  grande: 55.00,
-  GG: 65.00,
-};

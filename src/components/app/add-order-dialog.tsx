@@ -33,6 +33,7 @@ import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { getMockSettings } from '@/lib/settings-data';
 
 const orderItemSchema = z.object({
   productId: z.string().min(1, "Selecione um produto."),
@@ -410,13 +411,17 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
                                         defaultValue={field.value}
                                         className="flex flex-wrap gap-x-4 gap-y-2"
                                     >
-                                        {Object.keys(selectedProduct.sizes!).map((size) => (
-                                        <FormItem key={size} className="flex items-center space-x-2 space-y-0">
-                                            <FormControl>
-                                                <RadioGroupItem value={size} />
-                                            </FormControl>
-                                            <FormLabel className="font-normal capitalize cursor-pointer">{size}</FormLabel>
-                                        </FormItem>
+                                        {Object.keys(selectedProduct.sizes!)
+                                            .filter(
+                                                (size) => getMockSettings().sizeAvailability[size as PizzaSize]
+                                            )
+                                            .map((size) => (
+                                            <FormItem key={size} className="flex items-center space-x-2 space-y-0">
+                                                <FormControl>
+                                                    <RadioGroupItem value={size} />
+                                                </FormControl>
+                                                <FormLabel className="font-normal capitalize cursor-pointer">{size}</FormLabel>
+                                            </FormItem>
                                         ))}
                                     </RadioGroup>
                                     </FormControl>

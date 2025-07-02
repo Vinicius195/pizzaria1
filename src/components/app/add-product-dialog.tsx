@@ -33,7 +33,7 @@ import type { Product } from '@/types';
 import { pizzaSizes } from '@/types';
 import { useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
-import { basePizzaPrices } from '@/lib/mock-data';
+import { getMockSettings } from '@/lib/settings-data';
 
 const productSchema = z.object({
   name: z.string().min(3, "O nome do produto deve ter pelo menos 3 caracteres."),
@@ -131,7 +131,7 @@ export function AddProductDialog({ open, onOpenChange, onSubmit, product }: AddP
 
   useEffect(() => {
     if (!product && category === 'Pizza') {
-      form.setValue('sizes', basePizzaPrices);
+      form.setValue('sizes', getMockSettings().basePrices);
     }
   }, [category, product, form]);
 
