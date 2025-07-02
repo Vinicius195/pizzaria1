@@ -92,7 +92,9 @@ function PedidosPageContent() {
   const statusFilter = searchParams.get('status');
   
   const [isAddOrderDialogOpen, setIsAddOrderDialogOpen] = useState(false);
-  const [orders, setOrders] = useState<Order[]>(mockOrders);
+  const [orders, setOrders] = useState<Order[]>(() => 
+    mockOrders.slice().sort((a, b) => parseInt(b.id, 10) - parseInt(a.id, 10))
+  );
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   
   const allTabs = ['Todos', ...orderStatuses];
@@ -142,8 +144,10 @@ function PedidosPageContent() {
 
     const total = newOrderItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
+    const newOrderId = String(Math.max(...orders.map(o => parseInt(o.id, 10)), 0) + 1);
+
     const newOrder: Order = {
-      id: String(Date.now()).slice(-4),
+      id: newOrderId,
       customerName: data.customerName,
       items: newOrderItems.map(({ productName, quantity }) => ({ productName, quantity })),
       total: total,
