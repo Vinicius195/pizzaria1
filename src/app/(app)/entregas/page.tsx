@@ -17,11 +17,13 @@ export default function EntregasPage() {
     const [orders, setOrders] = useState<Order[]>(mockOrders);
 
     const deliveryOrders = orders.filter(
-        order => order.orderType === 'entrega' && (order.status === 'Pronto' || order.status === 'Em Entrega')
+        order => order.orderType === 'entrega' && ['Pronto', 'Em Entrega', 'Entregue'].includes(order.status)
     ).sort((a, b) => {
-        if (a.status === 'Pronto' && b.status !== 'Pronto') return -1;
-        if (a.status !== 'Pronto' && b.status === 'Pronto') return 1;
-        return parseInt(a.id, 10) - parseInt(b.id, 10);
+        const statusOrder: OrderStatus[] = ['Pronto', 'Em Entrega', 'Entregue'];
+        const aIndex = statusOrder.indexOf(a.status);
+        const bIndex = statusOrder.indexOf(b.status);
+        if (aIndex !== bIndex) return aIndex - bIndex;
+        return parseInt(b.id, 10) - parseInt(a.id, 10);
     });
 
     const handleAdvanceStatus = (orderId: string) => {
@@ -57,6 +59,8 @@ export default function EntregasPage() {
             return "bg-chart-2/10 text-chart-2 border-chart-2/20";
           case "Em Entrega":
             return "bg-primary/10 text-primary border-primary/20";
+          case "Entregue":
+            return "bg-muted text-muted-foreground border-border";
           default:
             return "bg-secondary text-secondary-foreground";
         }
@@ -66,7 +70,7 @@ export default function EntregasPage() {
         <div className="space-y-6">
             <div>
                 <h1 className="text-3xl font-bold font-headline">Controle de Entregas</h1>
-                <p className="text-muted-foreground">Gerencie os pedidos que estão prontos para sair ou em rota de entrega.</p>
+                <p className="text-muted-foreground">Gerencie os pedidos que estão prontos, em rota ou já foram entregues.</p>
             </div>
             
             {deliveryOrders.length === 0 ? (
@@ -75,14 +79,14 @@ export default function EntregasPage() {
                         <div className="text-center text-muted-foreground">
                             <Bike className="mx-auto h-12 w-12" />
                             <h3 className="mt-4 text-lg font-semibold">Nenhum pedido para entrega no momento</h3>
-                            <p className="mt-1 text-sm">Pedidos com status "Pronto" ou "Em Entrega" aparecerão aqui.</p>
+                            <p className="mt-1 text-sm">Pedidos de entrega com status "Pronto", "Em Entrega" ou "Entregue" aparecerão aqui.</p>
                         </div>
                     </CardContent>
                 </Card>
             ) : (
                 <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
                     {deliveryOrders.map(order => (
-                        <Card key={order.id} className="shadow-lg flex flex-col">
+                        <Card key={order.id} className={cn("shadow-lg flex flex-col transition-opacity", order.status === 'Entregue' && 'opacity-60 hover:opacity-90')}>
                             <CardHeader>
                                 <div className="flex justify-between items-start">
                                     <CardTitle className="font-headline">Pedido #{order.id}</CardTitle>
@@ -133,19 +137,26 @@ export default function EntregasPage() {
                                 </div>
                             </CardContent>
                             <CardFooter>
-                                <Button className="w-full" onClick={() => handleAdvanceStatus(order.id)}>
-                                    {order.status === 'Pronto' ? (
-                                        <>
-                                            <Bike className="mr-2 h-4 w-4" />
-                                            Marcar como "Em Entrega"
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Check className="mr-2 h-4 w-4" />
-                                            Marcar como "Entregue"
-                                        </>
-                                    )}
-                                </Button>
+                                {order.status === 'Entregue' ? (
+                                    <Button className="w-full" disabled variant="outline">
+                                        <Check className="mr-2 h-4 w-4" />
+                                        Pedido Entregue
+                                    </Button>
+                                ) : (
+                                    <Button className="w-full" onClick={() => handleAdvanceStatus(order.id)}>
+                                        {order.status === 'Pronto' ? (
+                                            <>
+                                                <Bike className="mr-2 h-4 w-4" />
+                                                Marcar como "Em Entrega"
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Check className="mr-2 h-4 w-4" />
+                                                Marcar como "Entregue"
+                                            </>
+                                        )}
+                                    </Button>
+                                )}
                             </CardFooter>
                         </Card>
                     ))}

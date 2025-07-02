@@ -36,6 +36,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { getMockSettings } from '@/lib/settings-data';
 import { Switch } from '../ui/switch';
+import { useUser } from '@/contexts/user-context';
 
 const orderItemSchema = z.object({
   productId: z.string().min(1, "Selecione um produto."),
@@ -151,6 +152,8 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
   const { toast } = useToast();
   const [openProductCombobox, setOpenProductCombobox] = useState<number | null>(null);
   const [openProduct2Combobox, setOpenProduct2Combobox] = useState<number | null>(null);
+  const { currentUser } = useUser();
+  const isManager = currentUser?.role === 'Administrador';
 
   const form = useForm<AddOrderFormValues>({
     resolver: zodResolver(addOrderSchema),
@@ -276,12 +279,14 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
                           </FormControl>
                           <FormLabel className="font-normal cursor-pointer">Retirada</FormLabel>
                         </FormItem>
-                        <FormItem className="flex items-center space-x-2 space-y-0">
-                          <FormControl>
-                            <RadioGroupItem value="entrega" />
-                          </FormControl>
-                          <FormLabel className="font-normal cursor-pointer">Entrega</FormLabel>
-                        </FormItem>
+                        {isManager && (
+                          <FormItem className="flex items-center space-x-2 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="entrega" />
+                            </FormControl>
+                            <FormLabel className="font-normal cursor-pointer">Entrega</FormLabel>
+                          </FormItem>
+                        )}
                       </RadioGroup>
                     </FormControl>
                     <FormMessage />
@@ -289,7 +294,7 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
                 )}
               />
 
-              {orderType === 'entrega' && (
+              {orderType === 'entrega' && isManager && (
                 <div className="space-y-4 rounded-md border bg-muted/50 p-4">
                    <FormField
                     control={form.control}
