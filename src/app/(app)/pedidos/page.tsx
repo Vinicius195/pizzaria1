@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { mockOrders, orderStatuses, mockProducts } from '@/lib/mock-data';
 import type { Order, OrderStatus, PizzaSize, Product } from '@/types';
-import { Clock, PlusCircle, Bike, MoreHorizontal, Search } from 'lucide-react';
+import { Clock, PlusCircle, Bike, MoreHorizontal, Search, MessageSquare } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AddOrderDialog, type AddOrderFormValues } from '@/components/app/add-order-dialog';
 import { OrderDetailsDialog } from '@/components/app/order-details-dialog';
@@ -69,6 +69,18 @@ function OrderCard({
             <CardDescription>{order.customerName}</CardDescription>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            {order.notes && (
+               <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <MessageSquare className="h-5 w-5 text-accent" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Contém observações</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
             {order.orderType === 'entrega' && (
               <TooltipProvider>
                 <Tooltip>
