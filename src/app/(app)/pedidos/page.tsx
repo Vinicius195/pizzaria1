@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { mockOrders, orderStatuses, mockProducts } from '@/lib/mock-data';
 import type { Order, OrderStatus } from '@/types';
-import { Clock, PlusCircle, Bike } from 'lucide-react';
+import { Clock, PlusCircle, Bike, MoreHorizontal } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AddOrderDialog, type AddOrderFormValues } from '@/components/app/add-order-dialog';
 import { OrderDetailsDialog } from '@/components/app/order-details-dialog';
@@ -26,15 +26,24 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 function OrderCard({ 
   order, 
   onAdvanceStatus, 
-  onViewDetails 
+  onViewDetails,
+  onCancelOrder
 }: { 
   order: Order; 
   onAdvanceStatus: (orderId: string) => void; 
   onViewDetails: (order: Order) => void; 
+  onCancelOrder: (orderId: string) => void;
 }) {
   const getStatusColor = (status: OrderStatus) => {
     switch (status) {
@@ -92,13 +101,30 @@ function OrderCard({
       </CardContent>
       <CardFooter className="flex justify-end gap-2">
         <Button variant="outline" onClick={() => onViewDetails(order)}>Ver Detalhes</Button>
-        <Button 
-          className="bg-accent hover:bg-accent/90"
-          onClick={() => onAdvanceStatus(order.id)}
-          disabled={isActionDisabled}
-        >
-          Avançar Status
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <MoreHorizontal className="h-5 w-5" />
+              <span className="sr-only">Ações</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={() => onAdvanceStatus(order.id)}
+              disabled={isActionDisabled}
+            >
+              Avançar Status
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="text-destructive focus:bg-destructive focus:text-destructive-foreground"
+              onClick={() => onCancelOrder(order.id)}
+              disabled={isActionDisabled}
+            >
+              Cancelar Pedido
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </CardFooter>
     </Card>
   );
@@ -142,6 +168,19 @@ function PedidosPageContent() {
         description: `O pedido #${orderId} agora está: ${nextStatus}.`,
       });
     }
+  };
+
+  const handleCancelOrder = (orderId: string) => {
+    setOrders(prevOrders =>
+      prevOrders.map(order =>
+        order.id === orderId ? { ...order, status: 'Cancelado' } : order
+      )
+    );
+    toast({
+      variant: "destructive",
+      title: "Pedido Cancelado!",
+      description: `O pedido #${orderId} foi cancelado.`,
+    });
   };
 
   const handleViewDetails = (order: Order) => {
@@ -210,7 +249,8 @@ function PedidosPageContent() {
               key={order.id} 
               order={order} 
               onAdvanceStatus={handleAdvanceStatus} 
-              onViewDetails={handleViewDetails} 
+              onViewDetails={handleViewDetails}
+              onCancelOrder={handleCancelOrder}
             />
           ))}
         </TabsContent>
@@ -221,7 +261,8 @@ function PedidosPageContent() {
                 key={order.id} 
                 order={order} 
                 onAdvanceStatus={handleAdvanceStatus} 
-                onViewDetails={handleViewDetails} 
+                onViewDetails={handleViewDetails}
+                onCancelOrder={handleCancelOrder}
               />
             ))}
           </TabsContent>
