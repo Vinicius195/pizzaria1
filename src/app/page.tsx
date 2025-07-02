@@ -88,7 +88,7 @@ export default function LoginPage() {
                         <div className="flex items-center rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
                             <Input
                                 type="text"
-                                placeholder="sergio.lemos"
+                                placeholder="seu.nome"
                                 className="flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
                                 {...field}
                             />
