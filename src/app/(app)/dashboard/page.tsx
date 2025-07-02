@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
@@ -16,6 +18,8 @@ import { cn } from "@/lib/utils";
 import { Package, ChefHat, Pizza, Bike, CheckCircle, XCircle, TrendingUp, DollarSign } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
+import { useUser } from "@/contexts/user-context";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type StatCard = {
   status: OrderStatus;
@@ -34,6 +38,15 @@ const statCards: StatCard[] = [
 ];
 
 export default function DashboardPage() {
+  const { currentUser } = useUser();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (currentUser.role !== 'Administrador') {
+      router.replace('/pedidos');
+    }
+  }, [currentUser, router]);
+
   const getOrderCountByStatus = (status: OrderStatus) => {
     return mockOrders.filter(order => order.status === status).length;
   };
@@ -62,6 +75,20 @@ export default function DashboardPage() {
         return "bg-secondary text-secondary-foreground";
     }
   };
+
+  if (currentUser.role !== 'Administrador') {
+    return (
+        <div className="space-y-4">
+          <Skeleton className="h-24 w-full" />
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+             <Skeleton className="h-24 w-full" />
+             <Skeleton className="h-24 w-full" />
+             <Skeleton className="h-24 w-full" />
+          </div>
+          <Skeleton className="h-64 w-full" />
+        </div>
+      );
+  }
 
   return (
     <div className="space-y-6">

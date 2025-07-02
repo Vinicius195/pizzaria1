@@ -7,38 +7,23 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { LogOut, Settings, User, Users, Bike } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
 import { ThemeToggle } from '../theme-toggle';
+import { useUser } from '@/contexts/user-context';
 
 const getPageTitle = (pathname: string) => {
   if (pathname.startsWith('/dashboard')) return 'Dashboard';
   if (pathname.startsWith('/pedidos')) return 'Pedidos';
+  if (pathname.startsWith('/entregas')) return 'Entregas';
   if (pathname.startsWith('/produtos')) return 'Produtos';
   if (pathname.startsWith('/clientes')) return 'Clientes';
   if (pathname.startsWith('/configuracoes')) return 'Configurações';
   return 'Pizzaria Bela Massa';
 };
 
-type UserProfile = {
-  name: string;
-  email: string;
-  role: 'Administrador' | 'Garçom' | 'Entregador';
-  avatar: string;
-  fallback: string;
-};
-
-const userProfiles: Record<string, UserProfile> = {
-  admin: { name: 'Administrador', email: 'admin@pizzafast.com', role: 'Administrador', avatar: 'https://placehold.co/40x40.png', fallback: 'A' },
-  waiter: { name: 'Garçom', email: 'garcom@pizzafast.com', role: 'Garçom', avatar: 'https://placehold.co/40x40.png', fallback: 'G' },
-  delivery: { name: 'Entregador', email: 'entregador@pizzafast.com', role: 'Entregador', avatar: 'https://placehold.co/40x40.png', fallback: 'E' },
-};
-
-
 export function AppHeader() {
   const pathname = usePathname();
   const title = getPageTitle(pathname);
-  const [currentUserKey, setCurrentUserKey] = useState('admin');
-  const currentUser = userProfiles[currentUserKey];
+  const { currentUser, setCurrentUser } = useUser();
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm lg:px-6">
@@ -75,15 +60,15 @@ export function AppHeader() {
             </DropdownMenuItem>
             <DropdownMenuSeparator />
              <DropdownMenuLabel>Trocar de Conta</DropdownMenuLabel>
-             <DropdownMenuItem onClick={() => setCurrentUserKey('admin')}>
+             <DropdownMenuItem onClick={() => setCurrentUser('admin')}>
               <User className="mr-2 h-4 w-4" />
               <span>Administrador</span>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setCurrentUserKey('waiter')}>
+            <DropdownMenuItem onClick={() => setCurrentUser('waiter')}>
               <Users className="mr-2 h-4 w-4" />
               <span>Garçom</span>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setCurrentUserKey('delivery')}>
+            <DropdownMenuItem onClick={() => setCurrentUser('delivery')}>
               <Bike className="mr-2 h-4 w-4" />
               <span>Entregador</span>
             </DropdownMenuItem>

@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { AddProductDialog, type ProductFormValues } from '@/components/app/add-product-dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useUser } from '@/contexts/user-context';
 
 export default function ProdutosPage() {
   const [products, setProducts] = useState<Product[]>(mockProducts);
@@ -20,6 +21,8 @@ export default function ProdutosPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
   const { toast } = useToast();
+  const { currentUser } = useUser();
+  const isManager = currentUser.role === 'Administrador';
 
   const handleToggleAvailable = (productId: string, isAvailable: boolean) => {
     setProducts(prev =>
@@ -138,12 +141,14 @@ export default function ProdutosPage() {
 
   return (
     <>
-      <AddProductDialog
-        open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        onSubmit={handleSubmitProduct}
-        product={editingProduct}
-      />
+      {isManager && (
+        <AddProductDialog
+          open={isDialogOpen}
+          onOpenChange={setIsDialogOpen}
+          onSubmit={handleSubmitProduct}
+          product={editingProduct}
+        />
+      )}
       
        <AlertDialog open={!!deletingProduct} onOpenChange={(open) => !open && setDeletingProduct(null)}>
         <AlertDialogContent>
@@ -167,10 +172,12 @@ export default function ProdutosPage() {
             <h1 className="text-3xl font-bold font-headline">Produtos</h1>
             <p className="text-muted-foreground">Adicione, edite e gerencie seus produtos.</p>
           </div>
-          <Button onClick={handleOpenAddDialog}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Adicionar Produto
-          </Button>
+          {isManager && (
+            <Button onClick={handleOpenAddDialog}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Adicionar Produto
+            </Button>
+          )}
         </div>
 
         <div className="space-y-8">
@@ -188,30 +195,32 @@ export default function ProdutosPage() {
                           <CardTitle className="text-lg font-headline truncate" title={product.name}>
                             {product.name}
                           </CardTitle>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button aria-haspopup="true" size="icon" variant="ghost">
-                                <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">Toggle menu</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                              <DropdownMenuItem onClick={() => handleOpenEditDialog(product)}>
-                                Editar
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleDuplicateProduct(product)}>
-                                Duplicar
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                className="text-destructive focus:text-destructive-foreground focus:bg-destructive"
-                                onClick={() => setDeletingProduct(product)}
-                              >
-                                Deletar
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          {isManager && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button aria-haspopup="true" size="icon" variant="ghost">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                  <span className="sr-only">Toggle menu</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                                <DropdownMenuItem onClick={() => handleOpenEditDialog(product)}>
+                                  Editar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleDuplicateProduct(product)}>
+                                  Duplicar
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="text-destructive focus:text-destructive-foreground focus:bg-destructive"
+                                  onClick={() => setDeletingProduct(product)}
+                                >
+                                  Deletar
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
                         </CardHeader>
                         <CardContent className="pt-0 pb-4 px-6">
                           {product.category === 'Pizza' && product.description && (
@@ -253,6 +262,7 @@ export default function ProdutosPage() {
                           checked={product.isAvailable}
                           onCheckedChange={(checked) => handleToggleAvailable(product.id, checked)}
                           aria-label={`Disponibilidade do produto ${product.name}`}
+                          disabled={!isManager}
                         />
                       </CardFooter>
                     </Card>
@@ -291,31 +301,34 @@ export default function ProdutosPage() {
                                 checked={drink.isAvailable}
                                 onCheckedChange={(checked) => handleToggleAvailable(drink.id, checked)}
                                 aria-label={`Disponibilidade do produto ${drink.name}`}
+                                disabled={!isManager}
                               />
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button aria-haspopup="true" size="icon" variant="ghost" className="h-8 w-8">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                    <span className="sr-only">Toggle menu for {drink.name}</span>
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                  <DropdownMenuItem onClick={() => handleOpenEditDialog(drink)}>
-                                    Editar
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleDuplicateProduct(drink)}>
-                                    Duplicar
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem
-                                    className="text-destructive focus:text-destructive-foreground focus:bg-destructive"
-                                    onClick={() => setDeletingProduct(drink)}
-                                  >
-                                    Deletar
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                              {isManager && (
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button aria-haspopup="true" size="icon" variant="ghost" className="h-8 w-8">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                      <span className="sr-only">Toggle menu for {drink.name}</span>
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                                    <DropdownMenuItem onClick={() => handleOpenEditDialog(drink)}>
+                                      Editar
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleDuplicateProduct(drink)}>
+                                      Duplicar
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      className="text-destructive focus:text-destructive-foreground focus:bg-destructive"
+                                      onClick={() => setDeletingProduct(drink)}
+                                    >
+                                      Deletar
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              )}
                             </div>
                           </div>
                         ))}

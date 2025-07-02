@@ -4,17 +4,21 @@ import { Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, S
 import { Pizza, Home, ClipboardList, Users, Settings, LifeBuoy, Bike } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useUser } from '@/contexts/user-context';
 
-const menuItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: Home },
-  { href: '/pedidos', label: 'Pedidos', icon: ClipboardList },
-  { href: '/entregas', label: 'Entregas', icon: Bike },
-  { href: '/produtos', label: 'Produtos', icon: Pizza },
-  { href: '/clientes', label: 'Clientes', icon: Users },
+const allMenuItems = [
+  { href: '/dashboard', label: 'Dashboard', icon: Home, roles: ['Administrador'] },
+  { href: '/pedidos', label: 'Pedidos', icon: ClipboardList, roles: ['Administrador', 'Garçom', 'Entregador'] },
+  { href: '/entregas', label: 'Entregas', icon: Bike, roles: ['Administrador', 'Garçom', 'Entregador'] },
+  { href: '/produtos', label: 'Produtos', icon: Pizza, roles: ['Administrador', 'Garçom', 'Entregador'] },
+  { href: '/clientes', label: 'Clientes', icon: Users, roles: ['Administrador'] },
 ];
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const { currentUser } = useUser();
+
+  const menuItems = allMenuItems.filter(item => item.roles.includes(currentUser.role));
 
   const isActive = (href: string) => {
     return pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
@@ -45,22 +49,24 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={isActive('/configuracoes')} tooltip="Configurações">
-              <Link href="/configuracoes">
-                <Settings />
-                <span>Configurações</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton tooltip="Ajuda">
-              <LifeBuoy />
-              <span>Ajuda</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        {currentUser.role === 'Administrador' && (
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={isActive('/configuracoes')} tooltip="Configurações">
+                <Link href="/configuracoes">
+                  <Settings />
+                  <span>Configurações</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton tooltip="Ajuda">
+                <LifeBuoy />
+                <span>Ajuda</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        )}
       </SidebarFooter>
     </Sidebar>
   );

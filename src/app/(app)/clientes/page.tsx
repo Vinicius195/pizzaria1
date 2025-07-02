@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Table,
   TableBody,
@@ -17,12 +18,24 @@ import { MoreHorizontal, PlusCircle, Link as LinkIcon, ExternalLink } from 'luci
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AddCustomerDialog, type CustomerFormValues } from '@/components/app/add-customer-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useUser } from '@/contexts/user-context';
+import { Skeleton } from '@/components/ui/skeleton';
+
 
 export default function ClientesPage() {
   const [customers, setCustomers] = useState<Customer[]>(mockCustomers);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const { toast } = useToast();
+  const { currentUser } = useUser();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (currentUser.role !== 'Administrador') {
+      router.replace('/pedidos');
+    }
+  }, [currentUser, router]);
+
 
   const handleOpenDialog = (customer: Customer | null = null) => {
     setEditingCustomer(customer);
@@ -63,6 +76,16 @@ export default function ClientesPage() {
       });
     }
   };
+
+  if (currentUser.role !== 'Administrador') {
+    return (
+        <div className="space-y-4">
+          <Skeleton className="h-12 w-1/4" />
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      );
+  }
 
   return (
     <>
