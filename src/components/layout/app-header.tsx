@@ -4,11 +4,11 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { LogOut, Settings, User, Users, Bike } from 'lucide-react';
+import { LogOut, Settings, User, Users, UserCog } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ThemeToggle } from '../theme-toggle';
-import { useUser } from '@/contexts/user-context';
+import { useUser, userProfiles } from '@/contexts/user-context';
 
 const getPageTitle = (pathname: string) => {
   if (pathname.startsWith('/dashboard')) return 'Dashboard';
@@ -54,24 +54,22 @@ export function AppHeader() {
               <User className="mr-2 h-4 w-4" />
               <span>Perfil</span>
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Configurações</span>
-            </DropdownMenuItem>
+            {currentUser.role === 'Administrador' && (
+              <DropdownMenuItem asChild>
+                <Link href="/configuracoes">
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Configurações</span>
+                </Link>
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
-             <DropdownMenuLabel>Trocar de Conta</DropdownMenuLabel>
-             <DropdownMenuItem onClick={() => setCurrentUser('admin')}>
-              <User className="mr-2 h-4 w-4" />
-              <span>Administrador</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setCurrentUser('waiter')}>
-              <Users className="mr-2 h-4 w-4" />
-              <span>Garçom</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setCurrentUser('delivery')}>
-              <Bike className="mr-2 h-4 w-4" />
-              <span>Entregador</span>
-            </DropdownMenuItem>
+             <DropdownMenuLabel>Trocar de Usuário</DropdownMenuLabel>
+             {Object.values(userProfiles).map(profile => (
+              <DropdownMenuItem key={profile.key} onClick={() => setCurrentUser(profile.key)} disabled={currentUser.key === profile.key}>
+                {profile.role === 'Administrador' ? <UserCog className="mr-2 h-4 w-4" /> : <Users className="mr-2 h-4 w-4" />}
+                <span>{profile.name}</span>
+              </DropdownMenuItem>
+             ))}
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link href="/">

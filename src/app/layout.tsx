@@ -2,6 +2,7 @@ import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
+import { UserProvider } from '@/contexts/user-context';
 
 export const metadata: Metadata = {
   title: 'Pizzaria Bela Massa',
@@ -23,8 +24,10 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased" suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="light">
-          {children}
-          <Toaster />
+          <UserProvider>
+            {children}
+            <Toaster />
+          </UserProvider>
         </ThemeProvider>
       </body>
     </html>

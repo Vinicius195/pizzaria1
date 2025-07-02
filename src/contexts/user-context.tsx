@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, ReactNode } from 'react';
 
-export type UserRole = 'Administrador' | 'Garçom' | 'Entregador';
+export type UserRole = 'Administrador' | 'Funcionário';
 
 export type UserProfile = {
   key: string;
@@ -14,9 +14,9 @@ export type UserProfile = {
 };
 
 export const userProfiles: Record<string, UserProfile> = {
-  admin: { key: 'admin', name: 'Administrador', email: 'admin@pizzafast.com', role: 'Administrador', avatar: 'https://placehold.co/40x40.png', fallback: 'A' },
-  waiter: { key: 'waiter', name: 'Garçom', email: 'garcom@pizzafast.com', role: 'Garçom', avatar: 'https://placehold.co/40x40.png', fallback: 'G' },
-  delivery: { key: 'delivery', name: 'Entregador', email: 'entregador@pizzafast.com', role: 'Entregador', avatar: 'https://placehold.co/40x40.png', fallback: 'E' },
+  admin: { key: 'admin', name: 'Sérgio Lemos', email: 'sergio.lemos@belamassa.com', role: 'Administrador', avatar: 'https://placehold.co/40x40.png', fallback: 'SL' },
+  employee1: { key: 'employee1', name: 'Beatriz Costa', email: 'beatriz.costa@belamassa.com', role: 'Funcionário', avatar: 'https://placehold.co/40x40.png', fallback: 'BC' },
+  employee2: { key: 'employee2', name: 'Ricardo Neves', email: 'ricardo.neves@belamassa.com', role: 'Funcionário', avatar: 'https://placehold.co/40x40.png', fallback: 'RN' },
 };
 
 interface UserContextType {

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -9,19 +10,30 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Pizza } from 'lucide-react';
+import { Pizza, LogIn } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useUser, userProfiles } from '@/contexts/user-context';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 
 export default function LoginPage() {
   const router = useRouter();
+  const { setCurrentUser } = useUser();
+  const [selectedUser, setSelectedUser] = useState<string>('admin');
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you'd handle authentication here
-    // For now, we'll just navigate to the dashboard
-    router.push('/dashboard');
+    if (selectedUser) {
+      setCurrentUser(selectedUser);
+      router.push('/dashboard');
+    }
   };
 
   return (
@@ -36,27 +48,32 @@ export default function LoginPage() {
               Pizzaria Bela Massa
             </CardTitle>
             <CardDescription>
-              Faça login para gerenciar sua pizzaria
+              Selecione um usuário para entrar
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="seu@email.com"
-                required
-                defaultValue="admin@pizzafast.com"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
-              <Input id="password" type="password" required defaultValue="password" />
+              <Label htmlFor="user-select">Usuário</Label>
+              <Select value={selectedUser} onValueChange={setSelectedUser}>
+                <SelectTrigger id="user-select">
+                  <SelectValue placeholder="Selecione um usuário..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.values(userProfiles).map((profile) => (
+                    <SelectItem key={profile.key} value={profile.key}>
+                      <div className="flex items-center gap-2">
+                         <span>{profile.name}</span>
+                         <span className="text-xs text-muted-foreground">({profile.role})</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
           <CardFooter>
             <Button type="submit" className="w-full bg-accent hover:bg-accent/90">
+              <LogIn className="mr-2 h-4 w-4" />
               Entrar
             </Button>
           </CardFooter>

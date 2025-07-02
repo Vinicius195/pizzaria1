@@ -8,9 +8,9 @@ import { useUser } from '@/contexts/user-context';
 
 const allMenuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: Home, roles: ['Administrador'] },
-  { href: '/pedidos', label: 'Pedidos', icon: ClipboardList, roles: ['Administrador', 'Garçom', 'Entregador'] },
-  { href: '/entregas', label: 'Entregas', icon: Bike, roles: ['Administrador', 'Garçom', 'Entregador'] },
-  { href: '/produtos', label: 'Produtos', icon: Pizza, roles: ['Administrador', 'Garçom', 'Entregador'] },
+  { href: '/pedidos', label: 'Pedidos', icon: ClipboardList, roles: ['Administrador', 'Funcionário'] },
+  { href: '/entregas', label: 'Entregas', icon: Bike, roles: ['Administrador', 'Funcionário'] },
+  { href: '/produtos', label: 'Produtos', icon: Pizza, roles: ['Administrador', 'Funcionário'] },
   { href: '/clientes', label: 'Clientes', icon: Users, roles: ['Administrador'] },
 ];
 
