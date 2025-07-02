@@ -15,11 +15,17 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { mockOrders, orderStatuses, mockProducts } from '@/lib/mock-data';
 import type { Order, OrderStatus } from '@/types';
-import { Clock, PlusCircle } from 'lucide-react';
+import { Clock, PlusCircle, Bike } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AddOrderDialog, type AddOrderFormValues } from '@/components/app/add-order-dialog';
 import { OrderDetailsDialog } from '@/components/app/order-details-dialog';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 function OrderCard({ 
   order, 
@@ -53,6 +59,18 @@ function OrderCard({
             <CardDescription>{order.customerName}</CardDescription>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            {order.orderType === 'entrega' && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Bike className="h-5 w-5 text-primary" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Pedido para Entrega</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
             <Clock className="h-4 w-4" />
             <span>{order.timestamp}</span>
           </div>
