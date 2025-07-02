@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { mockOrders, orderStatuses, mockProducts } from '@/lib/mock-data';
 import type { Order, OrderStatus, PizzaSize, Product } from '@/types';
-import { Clock, PlusCircle, Bike, MoreHorizontal, Search, MessageSquare } from 'lucide-react';
+import { Clock, PlusCircle, Bike, MoreHorizontal, Search, MessageSquare, ChefHat, Pizza as PizzaIcon, Package } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AddOrderDialog, type AddOrderFormValues } from '@/components/app/add-order-dialog';
 import { OrderDetailsDialog } from '@/components/app/order-details-dialog';
@@ -34,6 +34,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { useUser } from '@/contexts/user-context';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 function OrderCard({ 
   order, 
@@ -46,6 +49,9 @@ function OrderCard({
   onViewDetails: (order: Order) => void; 
   onCancelOrder: (orderId: string) => void; 
 }) {
+  const { currentUser } = useUser();
+  const isManager = currentUser?.role === 'Administrador';
+
   const getStatusColor = (status: OrderStatus) => {
     switch (status) {
       case 'Recebido': return 'border-chart-3';
@@ -61,11 +67,11 @@ function OrderCard({
   const isActionDisabled = order.status === 'Entregue' || order.status === 'Cancelado';
 
   return (
-    <Card className={`shadow-md hover:shadow-lg transition-shadow border-l-4 ${getStatusColor(order.status)}`}>
-      <CardHeader>
+    <Card className={`shadow-md hover:shadow-lg transition-shadow border-l-4 bg-card ${getStatusColor(order.status)}`}>
+      <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <div>
-            <CardTitle className="font-headline">Pedido #{order.id}</CardTitle>
+            <CardTitle className="font-headline text-base">Pedido #{order.id}</CardTitle>
             <CardDescription>{order.customerName}</CardDescription>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -98,25 +104,25 @@ function OrderCard({
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="py-2">
         <ul className="space-y-1 text-sm">
           {order.items.map((item, index) => (
             <li key={index} className="flex justify-between">
-              <span>{item.quantity}x {item.productName} {item.size && <span className='capitalize'>({item.size})</span>}</span>
+              <span className="truncate">{item.quantity}x {item.productName} {item.size && <span className='capitalize'>({item.size})</span>}</span>
             </li>
           ))}
         </ul>
         <Separator className="my-3" />
-        <div className="flex justify-between font-bold">
+        <div className="flex justify-between font-bold text-sm">
           <span>Total</span>
           <span>{order.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
         </div>
       </CardContent>
       <CardFooter className="flex justify-end gap-2">
-        <Button variant="outline" onClick={() => onViewDetails(order)}>Ver Detalhes</Button>
+        <Button variant="outline" size="sm" onClick={() => onViewDetails(order)}>Detalhes</Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" className="h-8 w-8">
               <MoreHorizontal className="h-5 w-5" />
               <span className="sr-only">Ações</span>
             </Button>
@@ -128,14 +134,18 @@ function OrderCard({
             >
               Avançar Status
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="text-destructive focus:bg-destructive focus:text-destructive-foreground"
-              onClick={() => onCancelOrder(order.id)}
-              disabled={isActionDisabled}
-            >
-              Cancelar Pedido
-            </DropdownMenuItem>
+            {isManager && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-destructive focus:bg-destructive focus:text-destructive-foreground"
+                  onClick={() => onCancelOrder(order.id)}
+                  disabled={isActionDisabled}
+                >
+                  Cancelar Pedido
+                </DropdownMenuItem>
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </CardFooter>
@@ -143,9 +153,17 @@ function OrderCard({
   );
 }
 
+const kanbanStatuses: { status: OrderStatus, icon: React.ElementType, color: string }[] = [
+    { status: "Recebido", icon: Package, color: "bg-chart-3" },
+    { status: "Preparando", icon: ChefHat, color: "bg-chart-4" },
+    { status: "Pronto", icon: PizzaIcon, color: "bg-chart-2" },
+];
+
+
 function PedidosPageContent() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
+  const { currentUser } = useUser();
   const statusFilter = searchParams.get('status');
   
   const [isAddOrderDialogOpen, setIsAddOrderDialogOpen] = useState(false);
@@ -157,6 +175,11 @@ function PedidosPageContent() {
   
   const allTabs = ['Todos', ...orderStatuses];
   const defaultValue = statusFilter && allTabs.includes(statusFilter) ? statusFilter : 'Todos';
+
+  if (!currentUser) {
+    return <PedidosPageSkeleton />;
+  }
+  const isManager = currentUser.role === 'Administrador';
 
   const handleAdvanceStatus = (orderId: string) => {
     let nextStatus: OrderStatus | undefined;
@@ -170,13 +193,11 @@ function PedidosPageContent() {
 
         if (!isActionable) return order;
 
-        // Skip "Em Entrega" for pickup orders
         if (order.status === 'Pronto' && order.orderType === 'retirada') {
           nextStatus = 'Entregue';
           return { ...order, status: 'Entregue' };
         }
 
-        // Default advancement
         const nextStatusIndex = currentStatusIndex + 1;
         if (nextStatusIndex < orderStatuses.length) {
           const potentialNextStatus = orderStatuses[nextStatusIndex];
@@ -273,12 +294,16 @@ function PedidosPageContent() {
         notes: data.notes,
     };
 
-    setOrders(prevOrders => [...prevOrders, newOrder]);
+    setOrders(prevOrders => [newOrder, ...prevOrders]);
   };
 
   const filteredOrders = orders.filter(order =>
-    order.customerName.toLowerCase().includes(searchQuery.toLowerCase())
+    order.customerName.toLowerCase().includes(searchQuery.toLowerCase()) || order.id.includes(searchQuery)
   );
+
+  const ordersByStatus = (status: OrderStatus) => {
+    return filteredOrders.filter((order: Order) => order.status === status);
+  };
 
   return (
     <>
@@ -299,7 +324,7 @@ function PedidosPageContent() {
           <div className="relative flex-grow">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por cliente..."
+              placeholder="Buscar cliente ou nº do pedido..."
               className="pl-10"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -311,38 +336,74 @@ function PedidosPageContent() {
           </Button>
         </div>
       </div>
-      <Tabs defaultValue={defaultValue} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 md:grid-cols-7">
-          <TabsTrigger value="Todos">Todos</TabsTrigger>
-          {orderStatuses.map(status => (
-            <TabsTrigger key={status} value={status}>{status}</TabsTrigger>
-          ))}
-        </TabsList>
-        <TabsContent value="Todos" className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredOrders.map(order => (
-            <OrderCard 
-              key={order.id} 
-              order={order} 
-              onAdvanceStatus={handleAdvanceStatus} 
-              onViewDetails={handleViewDetails}
-              onCancelOrder={handleCancelOrder}
-            />
-          ))}
-        </TabsContent>
-        {orderStatuses.map(status => (
-          <TabsContent key={status} value={status} className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filteredOrders.filter(order => order.status === status).map(order => (
-              <OrderCard 
+      
+      {isManager ? (
+        <Tabs defaultValue={defaultValue} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 md:grid-cols-7">
+                <TabsTrigger value="Todos">Todos</TabsTrigger>
+                {orderStatuses.map(status => (
+                    <TabsTrigger key={status} value={status}>{status}</TabsTrigger>
+                ))}
+            </TabsList>
+            <TabsContent value="Todos" className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {filteredOrders.map(order => (
+                <OrderCard 
                 key={order.id} 
                 order={order} 
                 onAdvanceStatus={handleAdvanceStatus} 
                 onViewDetails={handleViewDetails}
                 onCancelOrder={handleCancelOrder}
-              />
+                />
             ))}
-          </TabsContent>
-        ))}
-      </Tabs>
+            </TabsContent>
+            {orderStatuses.map(status => (
+            <TabsContent key={status} value={status} className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {filteredOrders.filter(order => order.status === status).map(order => (
+                <OrderCard 
+                    key={order.id} 
+                    order={order} 
+                    onAdvanceStatus={handleAdvanceStatus} 
+                    onViewDetails={handleViewDetails}
+                    onCancelOrder={handleCancelOrder}
+                />
+                ))}
+            </TabsContent>
+            ))}
+        </Tabs>
+      ) : (
+        <div className="w-full overflow-x-auto pb-4">
+            <div className="grid grid-flow-col auto-cols-fr md:auto-cols-auto gap-6">
+                {kanbanStatuses.map(({status, icon: Icon, color}) => (
+                    <div key={status} className="w-full md:w-[320px] lg:w-[350px] flex-shrink-0">
+                        <div className={cn("flex items-center justify-between p-3 rounded-t-lg text-white", color)}>
+                            <div className="flex items-center gap-2">
+                                <Icon className="h-5 w-5" />
+                                <h2 className="font-headline font-semibold text-lg">{status}</h2>
+                            </div>
+                            <Badge className="bg-white/20 text-white hover:bg-white/30">{ordersByStatus(status).length}</Badge>
+                        </div>
+                        <div className="h-full min-h-[calc(100vh-320px)] bg-muted/40 rounded-b-lg p-3 space-y-4">
+                            {ordersByStatus(status).length > 0 ? (
+                                ordersByStatus(status).map((order) => (
+                                    <OrderCard
+                                        key={order.id}
+                                        order={order}
+                                        onAdvanceStatus={handleAdvanceStatus}
+                                        onViewDetails={handleViewDetails}
+                                        onCancelOrder={handleCancelOrder}
+                                    />
+                                ))
+                            ) : (
+                                <div className="flex items-center justify-center h-48 rounded-md text-sm text-muted-foreground">
+                                    <p>Nenhum pedido aqui.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+      )}
     </>
   );
 }
