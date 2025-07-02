@@ -24,20 +24,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { mockProducts } from '@/lib/mock-data';
 import type { Product } from '@/types';
-import { Link, PlusCircle, Trash2 } from 'lucide-react';
+import { Check, ChevronsUpDown, Link, PlusCircle, Trash2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
+import { useState } from 'react';
+import { cn } from '@/lib/utils';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 
 const orderItemSchema = z.object({
   productId: z.string().min(1, "Selecione um produto."),
@@ -95,6 +90,8 @@ interface AddOrderDialogProps {
 
 export function AddOrderDialog({ open, onOpenChange }: AddOrderDialogProps) {
   const { toast } = useToast();
+  const [openProductCombobox, setOpenProductCombobox] = useState<number | null>(null);
+
   const form = useForm<AddOrderFormValues>({
     resolver: zodResolver(addOrderSchema),
     defaultValues: {
@@ -295,28 +292,65 @@ export function AddOrderDialog({ open, onOpenChange }: AddOrderDialogProps) {
                 <div className="space-y-3 mt-2">
                   {fields.map((field, index) => (
                     <div key={field.id} className="flex items-start gap-2">
-                      <FormField
+                       <FormField
                         control={form.control}
                         name={`items.${index}.productId`}
                         render={({ field }) => (
                           <FormItem className="flex-1">
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione um produto" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {Object.entries(groupedProducts).map(([category, products]) => (
-                                    <SelectGroup key={category}>
-                                      <SelectLabel>{category}</SelectLabel>
-                                      {products.map((product) => (
-                                        <SelectItem key={product.id} value={product.id}>{product.name}</SelectItem>
-                                      ))}
-                                    </SelectGroup>
-                                  ))}
-                              </SelectContent>
-                            </Select>
+                            <Popover open={openProductCombobox === index} onOpenChange={(isOpen) => setOpenProductCombobox(isOpen ? index : null)}>
+                              <PopoverTrigger asChild>
+                                <FormControl>
+                                  <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    aria-expanded={openProductCombobox === index}
+                                    className={cn(
+                                      "w-full justify-between",
+                                      !field.value && "text-muted-foreground"
+                                    )}
+                                  >
+                                    {field.value
+                                      ? availableProducts.find(
+                                          (product) => product.id === field.value
+                                        )?.name
+                                      : "Selecione um produto"}
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                  </Button>
+                                </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                                <Command>
+                                  <CommandInput placeholder="Pesquisar produto..." />
+                                  <CommandEmpty>Nenhum produto encontrado.</CommandEmpty>
+                                  <CommandList>
+                                    {Object.entries(groupedProducts).map(([category, products]) => (
+                                      <CommandGroup key={category} heading={category}>
+                                        {products.map((product) => (
+                                          <CommandItem
+                                            value={product.name}
+                                            key={product.id}
+                                            onSelect={() => {
+                                              form.setValue(`items.${index}.productId`, product.id, { shouldValidate: true });
+                                              setOpenProductCombobox(null)
+                                            }}
+                                          >
+                                            <Check
+                                              className={cn(
+                                                "mr-2 h-4 w-4",
+                                                product.id === field.value
+                                                  ? "opacity-100"
+                                                  : "opacity-0"
+                                              )}
+                                            />
+                                            {product.name}
+                                          </CommandItem>
+                                        ))}
+                                      </CommandGroup>
+                                    ))}
+                                  </CommandList>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
                             <FormMessage />
                           </FormItem>
                         )}
