@@ -26,10 +26,10 @@ export const mockOrders: Order[] = [
 ];
 
 export const mockCustomers: Customer[] = [
-  { id: '1', name: 'João Silva', phone: '(11) 98765-4321', lastOrderDate: '2024-07-20', totalSpent: 91.00 },
-  { id: '2', name: 'Maria Oliveira', phone: '(21) 91234-5678', lastOrderDate: '2024-07-20', totalSpent: 62.00 },
-  { id: '3', name: 'Carlos Pereira', phone: '(31) 95555-4444', lastOrderDate: '2024-07-19', totalSpent: 110.50 },
-  { id: '4', name: 'Ana Costa', phone: '(41) 98888-7777', lastOrderDate: '2024-07-18', totalSpent: 230.00 },
+  { id: '1', name: 'João Silva', phone: '(11) 98765-4321', lastOrderDate: '2024-07-20', totalSpent: 91.00, orderCount: 1 },
+  { id: '2', name: 'Maria Oliveira', phone: '(21) 91234-5678', lastOrderDate: '2024-07-20', totalSpent: 62.00, orderCount: 1 },
+  { id: '3', name: 'Carlos Pereira', phone: '(31) 95555-4444', lastOrderDate: '2024-07-19', totalSpent: 110.50, orderCount: 3 },
+  { id: '4', name: 'Ana Costa', phone: '(41) 98888-7777', lastOrderDate: '2024-07-18', totalSpent: 230.00, orderCount: 5 },
 ];
 
 export const orderStatuses: OrderStatus[] = ["Recebido", "Preparando", "Pronto", "Em Entrega", "Entregue", "Cancelado"];

@@ -21,6 +21,7 @@ export interface Customer {
   phone: string;
   lastOrderDate: string;
   totalSpent: number;
+  orderCount: number;
 };
 
 export interface Order {
