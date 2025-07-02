@@ -61,7 +61,9 @@ export function OrderDetailsDialog({ order, open, onOpenChange }: OrderDetailsDi
            {order.customerPhone && (
             <div className="flex items-center justify-between">
                 <span className="flex items-center gap-2 text-muted-foreground"><Phone className="h-4 w-4" /> Telefone</span>
-                <span className="font-medium">{order.customerPhone}</span>
+                <a href={`tel:${order.customerPhone}`} className="font-medium text-primary underline hover:text-primary/80">
+                  {order.customerPhone}
+                </a>
             </div>
            )}
           <div className="flex items-center justify-between">

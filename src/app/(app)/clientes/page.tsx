@@ -30,7 +30,7 @@ export default function ClientesPage() {
   };
 
   const handleSubmit = (data: CustomerFormValues) => {
-    const updatedData = {
+    const updatedData: Partial<Customer> = {
         name: data.name,
         phone: data.phone,
         address: data.addressType === 'manual' ? (data.address || undefined) : undefined,
@@ -48,7 +48,10 @@ export default function ClientesPage() {
     } else {
       const newCustomer: Customer = {
         id: String(Date.now()),
-        ...updatedData,
+        name: data.name,
+        phone: data.phone,
+        address: updatedData.address,
+        locationLink: updatedData.locationLink,
         lastOrderDate: new Date().toISOString().split('T')[0],
         totalSpent: 0,
         orderCount: 0,
@@ -122,7 +125,7 @@ export default function ClientesPage() {
                   </TableCell>
                   <TableCell className="hidden sm:table-cell text-center">{customer.orderCount}</TableCell>
                   <TableCell className="hidden lg:table-cell whitespace-nowrap">
-                    {new Date(customer.lastOrderDate).toLocaleDateString('pt-BR')}
+                    {new Date(customer.lastOrderDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
                   </TableCell>
                   <TableCell className="text-right whitespace-nowrap">
                     {customer.totalSpent.toLocaleString('pt-BR', {

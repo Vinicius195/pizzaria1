@@ -35,9 +35,6 @@ const statCards: StatCard[] = [
 
 export default function DashboardPage() {
   const getOrderCountByStatus = (status: OrderStatus) => {
-    if (status === 'Em Entrega') {
-      return mockOrders.filter(order => order.orderType === 'entrega' && (order.status === 'Pronto' || order.status === 'Em Entrega')).length;
-    }
     return mockOrders.filter(order => order.status === status).length;
   };
 
