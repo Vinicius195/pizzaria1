@@ -35,6 +35,9 @@ const statCards: StatCard[] = [
 
 export default function DashboardPage() {
   const getOrderCountByStatus = (status: OrderStatus) => {
+    if (status === 'Em Entrega') {
+      return mockOrders.filter(order => order.orderType === 'entrega' && (order.status === 'Pronto' || order.status === 'Em Entrega')).length;
+    }
     return mockOrders.filter(order => order.status === status).length;
   };
 
@@ -93,8 +96,10 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {statCards.map(({ status, title, icon: Icon, color }) => (
-          <Link href={`/pedidos?status=${status}`} key={status}>
+        {statCards.map(({ status, title, icon: Icon, color }) => {
+          const href = status === 'Em Entrega' ? '/entregas' : `/pedidos?status=${status}`;
+          return(
+          <Link href={href} key={status}>
             <Card className="shadow-md hover:shadow-lg transition-shadow h-full">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{title}</CardTitle>
@@ -106,7 +111,7 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           </Link>
-        ))}
+        )})}
       </div>
       
       <Card className="shadow-lg">

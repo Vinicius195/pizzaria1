@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import type { Order, OrderStatus } from '@/types';
 import { cn } from '@/lib/utils';
-import { Clock, User, Tag, ShoppingCart, DollarSign, Bike, Store, MapPin, Link as LinkIcon, MessageSquare } from 'lucide-react';
+import { Clock, User, Tag, ShoppingCart, DollarSign, Bike, Store, MapPin, Link as LinkIcon, MessageSquare, Phone } from 'lucide-react';
 
 interface OrderDetailsDialogProps {
   order: Order | null;
@@ -58,6 +58,12 @@ export function OrderDetailsDialog({ order, open, onOpenChange }: OrderDetailsDi
             <span className="flex items-center gap-2 text-muted-foreground"><User className="h-4 w-4" /> Cliente</span>
             <span className="font-medium">{order.customerName}</span>
           </div>
+           {order.customerPhone && (
+            <div className="flex items-center justify-between">
+                <span className="flex items-center gap-2 text-muted-foreground"><Phone className="h-4 w-4" /> Telefone</span>
+                <span className="font-medium">{order.customerPhone}</span>
+            </div>
+           )}
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-2 text-muted-foreground"><Clock className="h-4 w-4" /> Horário</span>
             <span className="font-medium">{order.timestamp}</span>

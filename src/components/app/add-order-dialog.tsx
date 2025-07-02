@@ -27,7 +27,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { mockProducts } from '@/lib/mock-data';
 import type { Product, PizzaSize } from '@/types';
-import { Check, ChevronsUpDown, Link, PlusCircle, Trash2 } from 'lucide-react';
+import { Check, ChevronsUpDown, Link, Phone, PlusCircle, Trash2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
@@ -47,6 +47,7 @@ const orderItemSchema = z.object({
 
 const addOrderSchema = z.object({
   customerName: z.string().min(2, "O nome do cliente é obrigatório."),
+  customerPhone: z.string().optional(),
   orderType: z.enum(['entrega', 'retirada'], {
     required_error: 'Selecione o tipo de pedido.',
   }),
@@ -155,6 +156,7 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
     resolver: zodResolver(addOrderSchema),
     defaultValues: {
       customerName: '',
+      customerPhone: '',
       orderType: 'retirada',
       items: [{ productId: '', product2Id: undefined, isHalfHalf: false, quantity: 1, size: undefined }],
       addressType: 'manual',
@@ -222,19 +224,39 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-4 max-h-[60vh] overflow-y-auto p-1 pr-4">
-              <FormField
-                control={form.control}
-                name="customerName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nome do Cliente</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Ex: João da Silva" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="customerName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome do Cliente</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: João da Silva" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="customerPhone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Telefone (Opcional)</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                           <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                              <Phone className="h-4 w-4 text-muted-foreground" />
+                           </div>
+                           <Input type="tel" placeholder="(00) 90000-0000" className="pl-10" {...field} />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <FormField
                 control={form.control}

@@ -262,6 +262,7 @@ function PedidosPageContent() {
     const newOrder: Order = {
         id: newOrderId,
         customerName: data.customerName,
+        customerPhone: data.customerPhone,
         items: orderItemsWithDetails.map(({ productName, quantity, size }) => ({ productName, quantity, size: size as PizzaSize | undefined })),
         total,
         status: 'Recebido',

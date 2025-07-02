@@ -26,6 +26,7 @@ export interface Customer {
 export interface Order {
   id: string;
   customerName: string;
+  customerPhone?: string;
   items: { productName: string; quantity: number, size?: PizzaSize }[];
   total: number;
   status: OrderStatus;

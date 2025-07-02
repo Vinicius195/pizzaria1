@@ -1,13 +1,14 @@
 'use client';
 
 import { Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '@/components/ui/sidebar';
-import { Pizza, Home, ClipboardList, Users, Settings, LifeBuoy } from 'lucide-react';
+import { Pizza, Home, ClipboardList, Users, Settings, LifeBuoy, Bike } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: Home },
   { href: '/pedidos', label: 'Pedidos', icon: ClipboardList },
+  { href: '/entregas', label: 'Entregas', icon: Bike },
   { href: '/produtos', label: 'Produtos', icon: Pizza },
   { href: '/clientes', label: 'Clientes', icon: Users },
 ];
