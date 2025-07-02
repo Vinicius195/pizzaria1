@@ -32,7 +32,7 @@ export default function ClientesPage() {
   const handleSubmit = (data: CustomerFormValues) => {
     if (editingCustomer) {
       setCustomers(customers.map(c => 
-        c.id === editingCustomer.id ? { ...c, name: data.name, phone: data.phone } : c
+        c.id === editingCustomer.id ? { ...c, name: data.name, phone: data.phone, address: data.address } : c
       ));
       toast({
         title: 'Cliente Atualizado!',
@@ -43,6 +43,7 @@ export default function ClientesPage() {
         id: String(Date.now()),
         name: data.name,
         phone: data.phone,
+        address: data.address,
         lastOrderDate: new Date().toISOString().split('T')[0],
         totalSpent: 0,
         orderCount: 0,
@@ -82,8 +83,9 @@ export default function ClientesPage() {
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>Telefone</TableHead>
+                <TableHead className="hidden md:table-cell">Endereço</TableHead>
                 <TableHead className="hidden sm:table-cell text-center">Pedidos</TableHead>
-                <TableHead className="hidden md:table-cell">Último Pedido</TableHead>
+                <TableHead className="hidden lg:table-cell">Último Pedido</TableHead>
                 <TableHead className="text-right">Total Gasto</TableHead>
                 <TableHead>
                   <span className="sr-only">Ações</span>
@@ -95,8 +97,11 @@ export default function ClientesPage() {
                 <TableRow key={customer.id}>
                   <TableCell className="font-medium">{customer.name}</TableCell>
                   <TableCell>{customer.phone}</TableCell>
+                  <TableCell className="hidden md:table-cell max-w-[250px] truncate" title={customer.address}>
+                    {customer.address || 'Não informado'}
+                  </TableCell>
                   <TableCell className="hidden sm:table-cell text-center">{customer.orderCount}</TableCell>
-                  <TableCell className="hidden md:table-cell">
+                  <TableCell className="hidden lg:table-cell">
                     {new Date(customer.lastOrderDate).toLocaleDateString('pt-BR')}
                   </TableCell>
                   <TableCell className="text-right">

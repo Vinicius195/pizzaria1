@@ -19,6 +19,7 @@ export interface Customer {
   id: string;
   name: string;
   phone: string;
+  address?: string;
   lastOrderDate: string;
   totalSpent: number;
   orderCount: number;

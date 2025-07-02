@@ -25,10 +25,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Phone } from 'lucide-react';
 import type { Customer } from '@/types';
+import { Textarea } from '../ui/textarea';
 
 const customerSchema = z.object({
   name: z.string().min(3, "O nome do cliente é obrigatório."),
   phone: z.string().min(10, "O telefone é obrigatório."),
+  address: z.string().optional(),
 });
 
 export type CustomerFormValues = z.infer<typeof customerSchema>;
@@ -46,6 +48,7 @@ export function AddCustomerDialog({ open, onOpenChange, onSubmit, customer }: Ad
     defaultValues: {
       name: '',
       phone: '',
+      address: '',
     },
   });
 
@@ -54,6 +57,7 @@ export function AddCustomerDialog({ open, onOpenChange, onSubmit, customer }: Ad
       form.reset({
         name: customer?.name || '',
         phone: customer?.phone || '',
+        address: customer?.address || '',
       });
     }
   }, [customer, open, form]);
@@ -105,6 +109,23 @@ export function AddCustomerDialog({ open, onOpenChange, onSubmit, customer }: Ad
                        </div>
                        <Input type="tel" placeholder="(00) 90000-0000" className="pl-10" {...field} />
                     </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="address"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Endereço (Opcional)</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Ex: Rua das Flores, 123, Bairro Jardim, Cidade..."
+                      {...field}
+                      value={field.value ?? ''}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
