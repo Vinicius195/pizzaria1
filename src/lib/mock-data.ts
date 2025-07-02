@@ -1,13 +1,13 @@
 import type { Product, Order, Customer, OrderStatus } from '@/types';
 
 export const mockProducts: Product[] = [
-  { id: '1', name: 'Pizza de Calabresa', category: 'Pizza', price: 45.50, isAvailable: true, imageUrl: 'https://placehold.co/100x100.png' },
-  { id: '2', name: 'Pizza de Quatro Queijos', category: 'Pizza', price: 52.00, isAvailable: true, imageUrl: 'https://placehold.co/100x100.png' },
-  { id: '3', name: 'Pizza Portuguesa', category: 'Pizza', price: 55.90, isAvailable: true, imageUrl: 'https://placehold.co/100x100.png' },
-  { id: '4', name: 'Coca-Cola 2L', category: 'Bebida', price: 12.00, isAvailable: true, imageUrl: 'https://placehold.co/100x100.png' },
-  { id: '5', name: 'Borda de Catupiry', category: 'Adicional', price: 8.00, isAvailable: false, imageUrl: 'https://placehold.co/100x100.png' },
-  { id: '6', name: 'Pizza de Frango com Catupiry', category: 'Pizza', price: 49.90, isAvailable: true, imageUrl: 'https://placehold.co/100x100.png' },
-  { id: '7', name: 'Guaraná Antarctica 2L', category: 'Bebida', price: 10.00, isAvailable: true, imageUrl: 'https://placehold.co/100x100.png' },
+  { id: '1', name: 'Pizza de Calabresa', category: 'Pizza', price: 45.50, isAvailable: true },
+  { id: '2', name: 'Pizza de Quatro Queijos', category: 'Pizza', price: 52.00, isAvailable: true },
+  { id: '3', name: 'Pizza Portuguesa', category: 'Pizza', price: 55.90, isAvailable: true },
+  { id: '4', name: 'Coca-Cola 2L', category: 'Bebida', price: 12.00, isAvailable: true },
+  { id: '5', name: 'Borda de Catupiry', category: 'Adicional', price: 8.00, isAvailable: false },
+  { id: '6', name: 'Pizza de Frango com Catupiry', category: 'Pizza', price: 49.90, isAvailable: true },
+  { id: '7', name: 'Guaraná Antarctica 2L', category: 'Bebida', price: 10.00, isAvailable: true },
 ];
 
 export const mockOrders: Order[] = [
