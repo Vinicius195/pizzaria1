@@ -7,23 +7,125 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { mockProducts } from '@/lib/mock-data';
 import type { Product, PizzaSize } from '@/types';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Search, Pizza } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { AddProductDialog, type ProductFormValues } from '@/components/app/add-product-dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useUser } from '@/contexts/user-context';
+import { Input } from '@/components/ui/input';
 
 export default function ProdutosPage() {
   const [products, setProducts] = useState<Product[]>(mockProducts);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
   const { currentUser } = useUser();
+
+  if (!currentUser) {
+    return null; // Or a skeleton loader
+  }
+
   const isManager = currentUser.role === 'Administrador';
 
+  // Employee-facing menu view
+  if (!isManager) {
+    const availableProducts = mockProducts.filter(p => p.isAvailable);
+
+    const filteredProducts = searchQuery
+      ? availableProducts.filter(p =>
+          p.name.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      : availableProducts;
+    
+    const groupedProducts = filteredProducts.reduce((acc, product) => {
+        const { category } = product;
+        if (!acc[category]) {
+          acc[category] = [];
+        }
+        acc[category].push(product);
+        return acc;
+      }, {} as Record<Product['category'], Product[]>);
+      
+    const categoryOrder: ('Pizza' | 'Bebida' | 'Adicional')[] = ['Pizza', 'Bebida', 'Adicional'];
+
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold font-headline">Cardápio</h1>
+            <p className="text-muted-foreground">Consulte os produtos, ingredientes e preços disponíveis.</p>
+          </div>
+          <div className="relative w-full sm:w-auto sm:max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar produto..."
+              className="pl-10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-8">
+          {categoryOrder.map((category) => (
+            groupedProducts[category] && groupedProducts[category].length > 0 && (
+              <section key={category}>
+                <h2 className="text-2xl font-bold font-headline mb-4 pb-2 border-b-2 border-primary/20">
+                  {category === 'Adicional' ? 'Adicionais' : `${category}s`}
+                </h2>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {groupedProducts[category].map((product) => (
+                    <Card key={product.id} className="shadow-md flex flex-col justify-between">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-headline">{product.name}</CardTitle>
+                        {product.category === 'Pizza' && product.description && (
+                          <CardDescription className="pt-1 text-sm">{product.description}</CardDescription>
+                        )}
+                      </CardHeader>
+                      <CardContent>
+                        {product.category === 'Pizza' && product.sizes ? (
+                          <div className="space-y-2">
+                            {Object.entries(product.sizes).map(([size, price]) => (
+                              <div key={size} className="flex justify-between items-center text-sm">
+                                <span className="text-muted-foreground capitalize">{size}</span>
+                                <span className="font-semibold">
+                                  {Number(price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : product.price ? (
+                           <div className="text-xl font-bold text-right">
+                              {Number(product.price).toLocaleString('pt-BR', {
+                                style: 'currency',
+                                currency: 'BRL',
+                              })}
+                           </div>
+                        ) : null}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </section>
+            )
+          ))}
+          {filteredProducts.length === 0 && (
+               <div className="text-center text-muted-foreground py-16">
+                  <Pizza className="mx-auto h-12 w-12" />
+                  <h3 className="mt-4 text-lg font-semibold">Nenhum produto encontrado</h3>
+                  <p className="mt-1 text-sm">Tente refinar sua busca. Apenas produtos disponíveis são exibidos.</p>
+              </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Admin-facing management view
   const handleToggleAvailable = (productId: string, isAvailable: boolean) => {
     setProducts(prev =>
       prev.map(p =>
@@ -141,14 +243,12 @@ export default function ProdutosPage() {
 
   return (
     <>
-      {isManager && (
-        <AddProductDialog
-          open={isDialogOpen}
-          onOpenChange={setIsDialogOpen}
-          onSubmit={handleSubmitProduct}
-          product={editingProduct}
-        />
-      )}
+      <AddProductDialog
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        onSubmit={handleSubmitProduct}
+        product={editingProduct}
+      />
       
        <AlertDialog open={!!deletingProduct} onOpenChange={(open) => !open && setDeletingProduct(null)}>
         <AlertDialogContent>
@@ -195,32 +295,30 @@ export default function ProdutosPage() {
                           <CardTitle className="text-lg font-headline truncate" title={product.name}>
                             {product.name}
                           </CardTitle>
-                          {isManager && (
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button aria-haspopup="true" size="icon" variant="ghost">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                  <span className="sr-only">Toggle menu</span>
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                <DropdownMenuItem onClick={() => handleOpenEditDialog(product)}>
-                                  Editar
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleDuplicateProduct(product)}>
-                                  Duplicar
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  className="text-destructive focus:text-destructive-foreground focus:bg-destructive"
-                                  onClick={() => setDeletingProduct(product)}
-                                >
-                                  Deletar
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          )}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button aria-haspopup="true" size="icon" variant="ghost">
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">Toggle menu</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                              <DropdownMenuItem onClick={() => handleOpenEditDialog(product)}>
+                                Editar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDuplicateProduct(product)}>
+                                Duplicar
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="text-destructive focus:text-destructive-foreground focus:bg-destructive"
+                                onClick={() => setDeletingProduct(product)}
+                              >
+                                Deletar
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </CardHeader>
                         <CardContent className="pt-0 pb-4 px-6">
                           {product.category === 'Pizza' && product.description && (
@@ -262,7 +360,6 @@ export default function ProdutosPage() {
                           checked={product.isAvailable}
                           onCheckedChange={(checked) => handleToggleAvailable(product.id, checked)}
                           aria-label={`Disponibilidade do produto ${product.name}`}
-                          disabled={!isManager}
                         />
                       </CardFooter>
                     </Card>
@@ -301,34 +398,31 @@ export default function ProdutosPage() {
                                 checked={drink.isAvailable}
                                 onCheckedChange={(checked) => handleToggleAvailable(drink.id, checked)}
                                 aria-label={`Disponibilidade do produto ${drink.name}`}
-                                disabled={!isManager}
                               />
-                              {isManager && (
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button aria-haspopup="true" size="icon" variant="ghost" className="h-8 w-8">
-                                      <MoreHorizontal className="h-4 w-4" />
-                                      <span className="sr-only">Toggle menu for {drink.name}</span>
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                    <DropdownMenuItem onClick={() => handleOpenEditDialog(drink)}>
-                                      Editar
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleDuplicateProduct(drink)}>
-                                      Duplicar
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem
-                                      className="text-destructive focus:text-destructive-foreground focus:bg-destructive"
-                                      onClick={() => setDeletingProduct(drink)}
-                                    >
-                                      Deletar
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              )}
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button aria-haspopup="true" size="icon" variant="ghost" className="h-8 w-8">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                    <span className="sr-only">Toggle menu for {drink.name}</span>
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                                  <DropdownMenuItem onClick={() => handleOpenEditDialog(drink)}>
+                                    Editar
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleDuplicateProduct(drink)}>
+                                    Duplicar
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    className="text-destructive focus:text-destructive-foreground focus:bg-destructive"
+                                    onClick={() => setDeletingProduct(drink)}
+                                  >
+                                    Deletar
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </div>
                           </div>
                         ))}
