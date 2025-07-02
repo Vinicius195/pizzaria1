@@ -11,10 +11,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useToast } from '@/hooks/use-toast';
 import { getMockSettings, updateMockSettings } from '@/lib/settings-data';
 import { pizzaSizes } from '@/types';
-import { useUser } from '@/contexts/user-context';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import { Skeleton } from '@/components/ui/skeleton';
 
 const settingsSchema = z.object({
   basePrices: z.object({
@@ -35,14 +31,6 @@ type SettingsFormValues = z.infer<typeof settingsSchema>;
 
 export default function ConfiguracoesPage() {
   const { toast } = useToast();
-  const { currentUser } = useUser();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (currentUser.role !== 'Administrador') {
-      router.replace('/pedidos');
-    }
-  }, [currentUser, router]);
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
@@ -56,16 +44,6 @@ export default function ConfiguracoesPage() {
       description: 'Suas alterações foram salvas com sucesso.',
     });
   };
-
-  if (currentUser.role !== 'Administrador') {
-    return (
-        <div className="space-y-4">
-          <Skeleton className="h-12 w-1/4" />
-          <Skeleton className="h-64 w-full" />
-          <Skeleton className="h-64 w-full" />
-        </div>
-      );
-  }
 
   return (
     <div className="space-y-6">

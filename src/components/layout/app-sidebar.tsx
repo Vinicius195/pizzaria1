@@ -18,6 +18,10 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { currentUser } = useUser();
 
+  if (!currentUser) {
+    return null;
+  }
+
   const menuItems = allMenuItems.filter(item => item.roles.includes(currentUser.role));
 
   const isActive = (href: string) => {
