@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import type { Order, OrderStatus } from '@/types';
 import { cn } from '@/lib/utils';
-import { Clock, User, Tag, ShoppingCart, DollarSign } from 'lucide-react';
+import { Clock, User, Tag, ShoppingCart, DollarSign, Bike, Store, MapPin, Link as LinkIcon } from 'lucide-react';
 
 interface OrderDetailsDialogProps {
   order: Order | null;
@@ -53,7 +53,7 @@ export function OrderDetailsDialog({ order, open, onOpenChange }: OrderDetailsDi
             Informações completas sobre o pedido.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto pr-4">
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-2 text-muted-foreground"><User className="h-4 w-4" /> Cliente</span>
             <span className="font-medium">{order.customerName}</span>
@@ -68,6 +68,40 @@ export function OrderDetailsDialog({ order, open, onOpenChange }: OrderDetailsDi
                 {order.status}
             </Badge>
           </div>
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-2 text-muted-foreground"><Store className="h-4 w-4" /> Tipo</span>
+            <span className="font-medium capitalize flex items-center gap-1.5">
+                {order.orderType === 'entrega' ? <Bike className="h-4 w-4" /> : <Store className="h-4 w-4" />}
+                {order.orderType === 'entrega' ? 'Entrega' : 'Retirada'}
+            </span>
+          </div>
+          
+          {order.orderType === 'entrega' && (order.address || order.locationLink) && (
+            <>
+              <Separator />
+              <div className="space-y-2">
+                <h4 className="flex items-center gap-2 font-medium text-muted-foreground"><MapPin className="h-4 w-4" /> Endereço</h4>
+                {order.address && (
+                  <p className="text-sm text-right">{order.address}</p>
+                )}
+                {order.locationLink && (
+                  <div className="flex justify-end">
+                    <Button asChild variant="link" className="h-auto p-0 text-sm">
+                      <a
+                        href={order.locationLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2"
+                      >
+                        <LinkIcon className="h-4 w-4" />
+                        Abrir no mapa
+                      </a>
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
 
           <Separator />
           

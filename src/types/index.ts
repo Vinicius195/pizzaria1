@@ -24,4 +24,7 @@ export interface Order {
   total: number;
   status: OrderStatus;
   timestamp: string;
+  orderType: 'entrega' | 'retirada';
+  address?: string;
+  locationLink?: string;
 };

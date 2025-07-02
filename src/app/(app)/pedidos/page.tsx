@@ -101,30 +101,28 @@ function PedidosPageContent() {
   const defaultValue = statusFilter && allTabs.includes(statusFilter) ? statusFilter : 'Todos';
 
   const handleAdvanceStatus = (orderId: string) => {
-    const orderToUpdate = orders.find((o) => o.id === orderId);
-    if (!orderToUpdate) return;
-
-    const currentStatusIndex = orderStatuses.indexOf(orderToUpdate.status);
-    if (orderToUpdate.status === 'Entregue' || orderToUpdate.status === 'Cancelado' || currentStatusIndex === -1) {
-      return;
-    }
-
-    const nextStatusIndex = currentStatusIndex + 1;
-    if (nextStatusIndex < orderStatuses.length) {
-      const nextStatus = orderStatuses[nextStatusIndex];
+    let nextStatus: OrderStatus | undefined;
+    
+    setOrders(prevOrders =>
+      prevOrders.map(order => {
+        if (order.id === orderId) {
+          const currentStatusIndex = orderStatuses.indexOf(order.status);
+          const isActionable = order.status !== 'Entregue' && order.status !== 'Cancelado' && currentStatusIndex !== -1;
+          
+          if (isActionable && currentStatusIndex + 1 < orderStatuses.length) {
+            nextStatus = orderStatuses[currentStatusIndex + 1];
+            return { ...order, status: nextStatus };
+          }
+        }
+        return order;
+      })
+    );
       
-      setOrders(prevOrders =>
-        prevOrders.map(order =>
-          order.id === orderId ? { ...order, status: nextStatus } : order
-        )
-      );
-      
-      if (nextStatus !== 'Cancelado') {
-        toast({
-          title: "Status do Pedido Atualizado!",
-          description: `O pedido #${orderId} agora está: ${nextStatus}.`,
-        });
-      }
+    if (nextStatus && nextStatus !== 'Cancelado') {
+      toast({
+        title: "Status do Pedido Atualizado!",
+        description: `O pedido #${orderId} agora está: ${nextStatus}.`,
+      });
     }
   };
 
@@ -144,7 +142,7 @@ function PedidosPageContent() {
 
     const total = newOrderItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
-    const newOrderId = String(Math.max(...orders.map(o => parseInt(o.id, 10)), 0) + 1);
+    const newOrderId = String(Math.max(0, ...orders.map(o => parseInt(o.id, 10))) + 1);
 
     const newOrder: Order = {
       id: newOrderId,
@@ -153,6 +151,9 @@ function PedidosPageContent() {
       total: total,
       status: 'Recebido',
       timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      orderType: data.orderType,
+      address: data.address,
+      locationLink: data.locationLink,
     };
 
     setOrders(prevOrders => [...prevOrders, newOrder]);

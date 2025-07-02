@@ -11,13 +11,13 @@ export const mockProducts: Product[] = [
 ];
 
 export const mockOrders: Order[] = [
-  { id: '1001', customerName: 'João Silva', items: [{ productName: 'Pizza de Calabresa', quantity: 2 }], total: 91.00, status: 'Recebido', timestamp: '10:30' },
-  { id: '1002', customerName: 'Maria Oliveira', items: [{ productName: 'Pizza de Quatro Queijos', quantity: 1 }], total: 52.00, status: 'Preparando', timestamp: '10:32' },
-  { id: '1003', customerName: 'Carlos Pereira', items: [{ productName: 'Pizza Portuguesa', quantity: 1 }], total: 55.90, status: 'Pronto', timestamp: '10:35' },
-  { id: '1004', customerName: 'Ana Costa', items: [{ productName: 'Pizza de Frango com Catupiry', quantity: 1 }], total: 49.90, status: 'Em Entrega', timestamp: '10:40' },
-  { id: '1005', customerName: 'Lucas Souza', items: [{ productName: 'Coca-Cola 2L', quantity: 1 }], total: 12.00, status: 'Entregue', timestamp: '10:25' },
-   { id: '1006', customerName: 'Mariana Lima', items: [{ productName: 'Pizza de Calabresa', quantity: 1 }, { productName: 'Coca-Cola 2L', quantity: 1 }], total: 57.50, status: 'Preparando', timestamp: '10:42' },
-   { id: '1007', customerName: 'Pedro Almeida', items: [{ productName: 'Pizza de Quatro Queijos', quantity: 1 }], total: 52.00, status: 'Cancelado', timestamp: '10:50' },
+  { id: '1001', customerName: 'João Silva', items: [{ productName: 'Pizza de Calabresa', quantity: 2 }], total: 91.00, status: 'Recebido', timestamp: '10:30', orderType: 'retirada' },
+  { id: '1002', customerName: 'Maria Oliveira', items: [{ productName: 'Pizza de Quatro Queijos', quantity: 1 }], total: 52.00, status: 'Preparando', timestamp: '10:32', orderType: 'retirada' },
+  { id: '1003', customerName: 'Carlos Pereira', items: [{ productName: 'Pizza Portuguesa', quantity: 1 }], total: 55.90, status: 'Pronto', timestamp: '10:35', orderType: 'entrega', address: 'Rua das Gaivotas, 789, Apto 3, Bairro Sol, Florianópolis - SC' },
+  { id: '1004', customerName: 'Ana Costa', items: [{ productName: 'Pizza de Frango com Catupiry', quantity: 1 }], total: 49.90, status: 'Em Entrega', timestamp: '10:40', orderType: 'entrega', locationLink: 'https://maps.app.goo.gl/examplelink1' },
+  { id: '1005', customerName: 'Lucas Souza', items: [{ productName: 'Coca-Cola 2L', quantity: 1 }], total: 12.00, status: 'Entregue', timestamp: '10:25', orderType: 'retirada' },
+  { id: '1006', customerName: 'Mariana Lima', items: [{ productName: 'Pizza de Calabresa', quantity: 1 }, { productName: 'Coca-Cola 2L', quantity: 1 }], total: 57.50, status: 'Preparando', timestamp: '10:42', orderType: 'entrega', address: 'Avenida Beira Mar, 456, Centro, Rio de Janeiro - RJ' },
+  { id: '1007', customerName: 'Pedro Almeida', items: [{ productName: 'Pizza de Quatro Queijos', quantity: 1 }], total: 52.00, status: 'Cancelado', timestamp: '10:50', orderType: 'retirada' },
 ];
 
 export const mockCustomers: Customer[] = [
