@@ -15,6 +15,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription as FormDescriptionUI,
   FormField,
   FormItem,
   FormLabel,
@@ -34,9 +35,12 @@ import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { getMockSettings } from '@/lib/settings-data';
+import { Switch } from '../ui/switch';
 
 const orderItemSchema = z.object({
   productId: z.string().min(1, "Selecione um produto."),
+  product2Id: z.string().optional(), // For the second half
+  isHalfHalf: z.boolean().default(false),
   quantity: z.coerce.number().min(1, "A quantidade deve ser pelo menos 1."),
   size: z.custom<PizzaSize>().optional(),
 });
@@ -53,15 +57,46 @@ const addOrderSchema = z.object({
   notes: z.string().optional(),
 }).superRefine((data, ctx) => {
     data.items.forEach((item, index) => {
-      const product = mockProducts.find(p => p.id === item.productId);
-      if (product?.category === 'Pizza') {
+      const product1 = mockProducts.find(p => p.id === item.productId);
+
+      if (item.isHalfHalf) {
+          const product2 = mockProducts.find(p => p.id === item.product2Id);
+          if (!product1 || product1.category !== 'Pizza') {
+             ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "O primeiro sabor deve ser uma pizza.",
+                path: [`items`, index, `productId`],
+             });
+          }
+           if (!item.product2Id) {
+             ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Selecione o segundo sabor.",
+                path: [`items`, index, `product2Id`],
+             });
+          } else if (!product2 || product2.category !== 'Pizza') {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "O segundo sabor deve ser uma pizza.",
+                path: [`items`, index, `product2Id`],
+             });
+          }
+
+          if (!item.size) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Selecione o tamanho da pizza.",
+                path: [`items`, index, `size`],
+            });
+          }
+      } else if (product1?.category === 'Pizza') {
         if (!item.size) {
            ctx.addIssue({
               code: z.ZodIssueCode.custom,
               message: "Selecione o tamanho da pizza.",
               path: [`items`, index, `size`],
            });
-        } else if (!product.sizes || !product.sizes[item.size]) {
+        } else if (!product1.sizes || !product1.sizes[item.size]) {
              ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 message: "Tamanho indisponível para esta pizza.",
@@ -114,13 +149,14 @@ interface AddOrderDialogProps {
 export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialogProps) {
   const { toast } = useToast();
   const [openProductCombobox, setOpenProductCombobox] = useState<number | null>(null);
+  const [openProduct2Combobox, setOpenProduct2Combobox] = useState<number | null>(null);
 
   const form = useForm<AddOrderFormValues>({
     resolver: zodResolver(addOrderSchema),
     defaultValues: {
       customerName: '',
       orderType: 'retirada',
-      items: [{ productId: '', quantity: 1, size: undefined }],
+      items: [{ productId: '', product2Id: undefined, isHalfHalf: false, quantity: 1, size: undefined }],
       addressType: 'manual',
       address: '',
       locationLink: '',
@@ -139,6 +175,8 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
   const addressType = form.watch('addressType');
 
   const availableProducts = mockProducts.filter((p) => p.isAvailable);
+  const availablePizzas = availableProducts.filter((p) => p.category === 'Pizza');
+  
   const groupedProducts = availableProducts.reduce(
     (acc, product) => {
       const { category } = product;
@@ -323,8 +361,10 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
                 <div className="space-y-3 mt-2">
                   {fields.map((field, index) => {
                     const selectedProduct = availableProducts.find(p => p.id === watchedItems[index]?.productId);
+                    const isFirstFlavorPizza = selectedProduct?.category === 'Pizza';
+                    const isHalfHalf = watchedItems[index]?.isHalfHalf ?? false;
                     return (
-                      <div key={field.id} className="flex flex-col gap-2 rounded-md border p-4">
+                      <div key={field.id} className="flex flex-col gap-3 rounded-md border p-4">
                         <div className="flex items-start gap-2">
                           <FormField
                             control={form.control}
@@ -365,7 +405,9 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
                                                 key={product.id}
                                                 onSelect={() => {
                                                   form.setValue(`items.${index}.productId`, product.id, { shouldValidate: true });
-                                                  form.setValue(`items.${index}.size`, undefined, { shouldValidate: false });
+                                                  form.setValue(`items.${index}.size`, undefined, { shouldValidate: true });
+                                                  form.setValue(`items.${index}.isHalfHalf`, false, { shouldValidate: true });
+                                                  form.setValue(`items.${index}.product2Id`, undefined, { shouldValidate: true });
                                                   setOpenProductCombobox(null)
                                                 }}
                                               >
@@ -407,7 +449,98 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
                             <span className="sr-only">Remover item</span>
                           </Button>
                         </div>
-                        {selectedProduct?.category === 'Pizza' && selectedProduct.sizes && (
+
+                        {isFirstFlavorPizza && (
+                            <FormField
+                                control={form.control}
+                                name={`items.${index}.isHalfHalf`}
+                                render={({ field: switchField }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border bg-muted/30 p-3 shadow-sm">
+                                    <div className="space-y-0.5">
+                                        <FormLabel className="text-sm font-medium">
+                                            Pizza Meio a Meio?
+                                        </FormLabel>
+                                        <FormDescriptionUI className="text-xs">
+                                            Será cobrado o valor do sabor mais caro.
+                                        </FormDescriptionUI>
+                                    </div>
+                                    <FormControl>
+                                    <Switch
+                                        checked={switchField.value}
+                                        onCheckedChange={(checked) => {
+                                            switchField.onChange(checked);
+                                            if (!checked) {
+                                                form.setValue(`items.${index}.product2Id`, undefined, { shouldValidate: true });
+                                            }
+                                        }}
+                                    />
+                                    </FormControl>
+                                </FormItem>
+                                )}
+                            />
+                        )}
+
+                        {isHalfHalf && (
+                             <FormField
+                                control={form.control}
+                                name={`items.${index}.product2Id`}
+                                render={({ field }) => (
+                                <FormItem className="flex-1">
+                                    <FormLabel>2º Sabor da Pizza</FormLabel>
+                                    <Popover open={openProduct2Combobox === index} onOpenChange={(isOpen) => setOpenProduct2Combobox(isOpen ? index : null)}>
+                                    <PopoverTrigger asChild>
+                                        <FormControl>
+                                        <Button
+                                            variant="outline"
+                                            role="combobox"
+                                            className={cn(
+                                            "w-full justify-between",
+                                            !field.value && "text-muted-foreground"
+                                            )}
+                                        >
+                                            {field.value
+                                            ? availablePizzas.find((p) => p.id === field.value)?.name
+                                            : "Selecione o segundo sabor"}
+                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                        </Button>
+                                        </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                                        <Command>
+                                        <CommandInput placeholder="Pesquisar pizza..." />
+                                        <CommandEmpty>Nenhuma pizza encontrada.</CommandEmpty>
+                                        <CommandList>
+                                            <CommandGroup>
+                                            {availablePizzas.map((pizza) => (
+                                                <CommandItem
+                                                value={pizza.name}
+                                                key={pizza.id}
+                                                onSelect={() => {
+                                                    form.setValue(`items.${index}.product2Id`, pizza.id, { shouldValidate: true });
+                                                    setOpenProduct2Combobox(null)
+                                                }}
+                                                >
+                                                <Check
+                                                    className={cn(
+                                                    "mr-2 h-4 w-4",
+                                                    pizza.id === field.value ? "opacity-100" : "opacity-0"
+                                                    )}
+                                                />
+                                                {pizza.name}
+                                                </CommandItem>
+                                            ))}
+                                            </CommandGroup>
+                                        </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                    </Popover>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                        )}
+
+                        {isFirstFlavorPizza && (
                             <FormField
                                 control={form.control}
                                 name={`items.${index}.size`}
@@ -448,7 +581,7 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
                   variant="outline"
                   size="sm"
                   className="mt-3"
-                  onClick={() => append({ productId: '', quantity: 1, size: undefined })}
+                  onClick={() => append({ productId: '', product2Id: undefined, isHalfHalf: false, quantity: 1, size: undefined })}
                 >
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Adicionar Item

@@ -212,23 +212,36 @@ function PedidosPageContent() {
 
   const handleAddOrder = (data: AddOrderFormValues) => {
     const orderItemsWithDetails = data.items.map(item => {
-        const product = mockProducts.find(p => p.id === item.productId);
-        if (!product) return null;
+        const product1 = mockProducts.find(p => p.id === item.productId);
+        if (!product1) return null;
 
-        let price = 0;
-        if (product.category === 'Pizza' && item.size && product.sizes) {
-            price = product.sizes[item.size] || 0;
-        } else if (product.price) {
-            price = product.price;
+        if (item.isHalfHalf && item.size) {
+            const product2 = mockProducts.find(p => p.id === item.product2Id);
+            if (!product2) return null;
+
+            const price1 = product1.sizes?.[item.size] ?? 0;
+            const price2 = product2.sizes?.[item.size] ?? 0;
+            const finalPrice = Math.max(price1, price2);
+
+            return {
+                productName: `Meio a Meio: ${product1.name} / ${product2.name}`,
+                quantity: item.quantity,
+                size: item.size,
+                price: finalPrice,
+            };
         }
 
+        const price = (product1.category === 'Pizza' && item.size && product1.sizes)
+            ? product1.sizes[item.size] || 0
+            : product1.price || 0;
+
         return {
-            productName: getProductDisplayName(product),
+            productName: getProductDisplayName(product1),
             quantity: item.quantity,
             size: item.size,
             price: price,
         };
-    }).filter(Boolean);
+    }).filter((item): item is NonNullable<typeof item> => item !== null);
 
 
     const total = orderItemsWithDetails.reduce((acc, item) => acc + (item!.price * item!.quantity), 0);
