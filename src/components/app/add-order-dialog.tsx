@@ -32,7 +32,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { mockProducts } from '@/lib/mock-data';
-import { MapPin, PlusCircle, Trash2 } from 'lucide-react';
+import { Link, PlusCircle, Trash2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 
@@ -47,16 +47,41 @@ const addOrderSchema = z.object({
     required_error: 'Selecione o tipo de pedido.',
   }),
   items: z.array(orderItemSchema).min(1, "Adicione pelo menos um item ao pedido."),
+  addressType: z.enum(['manual', 'link']).default('manual'),
   address: z.string().optional(),
-}).refine(data => {
-    if (data.orderType === 'entrega' && (!data.address || data.address.trim().length < 10)) {
-        return false;
+  locationLink: z.string().optional(),
+}).superRefine((data, ctx) => {
+    if (data.orderType === 'entrega') {
+        if (data.addressType === 'manual') {
+            if (!data.address || data.address.trim().length < 10) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: "O endereço é obrigatório e deve ter pelo menos 10 caracteres.",
+                    path: ["address"],
+                });
+            }
+        } else if (data.addressType === 'link') {
+            if (!data.locationLink || data.locationLink.trim() === '') {
+                 ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: "O link de localização é obrigatório.",
+                    path: ["locationLink"],
+                });
+            } else {
+                try {
+                    new URL(data.locationLink);
+                } catch (_) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        message: "Por favor, insira um link válido (Ex: https://maps.app.goo.gl/...).",
+                        path: ["locationLink"],
+                    });
+                }
+            }
+        }
     }
-    return true;
-}, {
-    message: "O endereço é obrigatório e deve ter pelo menos 10 caracteres.",
-    path: ["address"],
 });
+
 
 type AddOrderFormValues = z.infer<typeof addOrderSchema>;
 
@@ -73,7 +98,9 @@ export function AddOrderDialog({ open, onOpenChange }: AddOrderDialogProps) {
       customerName: '',
       orderType: 'retirada',
       items: [{ productId: '', quantity: 1 }],
+      addressType: 'manual',
       address: '',
+      locationLink: '',
     },
   });
 
@@ -83,6 +110,7 @@ export function AddOrderDialog({ open, onOpenChange }: AddOrderDialogProps) {
   });
 
   const orderType = form.watch('orderType');
+  const addressType = form.watch('addressType');
   
   const handleClose = () => {
     form.reset();
@@ -158,29 +186,90 @@ export function AddOrderDialog({ open, onOpenChange }: AddOrderDialogProps) {
               />
 
               {orderType === 'entrega' && (
-                <FormField
-                  control={form.control}
-                  name="address"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Endereço de Entrega</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Textarea
-                            placeholder="Ex: Rua das Flores, 123, Bairro Jardim, Cidade - Estado, CEP 12345-678"
-                            className="pr-10"
-                            {...field}
-                          />
-                          <Button type="button" variant="ghost" size="icon" className="absolute top-1/2 right-1 -translate-y-1/2 h-8 w-8">
-                              <MapPin className="h-4 w-4" />
-                              <span className="sr-only">Usar localização</span>
-                          </Button>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
+                <div className="space-y-4 rounded-md border bg-muted/50 p-4">
+                   <FormField
+                    control={form.control}
+                    name="addressType"
+                    render={({ field }) => (
+                      <FormItem className="space-y-3">
+                        <FormLabel>Como informar o endereço?</FormLabel>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={(value) => {
+                              field.onChange(value);
+                              form.setValue('address', '');
+                              form.setValue('locationLink', '');
+                            }}
+                            defaultValue={field.value}
+                            className="flex flex-col space-y-2 pt-1"
+                          >
+                            <FormItem className="flex items-center space-x-3 space-y-0">
+                              <FormControl>
+                                <RadioGroupItem value="manual" />
+                              </FormControl>
+                              <FormLabel className="font-normal cursor-pointer">
+                                Digitar Endereço Manualmente
+                              </FormLabel>
+                            </FormItem>
+                            <FormItem className="flex items-center space-x-3 space-y-0">
+                              <FormControl>
+                                <RadioGroupItem value="link" />
+                              </FormControl>
+                              <FormLabel className="font-normal cursor-pointer">
+                                Colar Link de Localização
+                              </FormLabel>
+                            </FormItem>
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {addressType === 'manual' && (
+                    <FormField
+                      control={form.control}
+                      name="address"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Endereço Completo</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Ex: Rua das Flores, 123, Bairro Jardim, Cidade - Estado, CEP 12345-678"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   )}
-                />
+
+                  {addressType === 'link' && (
+                    <FormField
+                      control={form.control}
+                      name="locationLink"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Link do Google Maps</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                <Link className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                              <Input
+                                placeholder="https://maps.app.goo.gl/..."
+                                className="pl-10"
+                                {...field}
+                              />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                </div>
               )}
               
               <Separator />
