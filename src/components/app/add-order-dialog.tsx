@@ -327,10 +327,10 @@ export function AddOrderDialog({ open, onOpenChange }: AddOrderDialogProps) {
                                       <CommandGroup key={category} heading={category}>
                                         {products.map((product) => (
                                           <CommandItem
-                                            value={product.name}
+                                            value={product.id}
                                             key={product.id}
-                                            onSelect={() => {
-                                              form.setValue(`items.${index}.productId`, product.id, { shouldValidate: true });
+                                            onSelect={(currentValue) => {
+                                              form.setValue(`items.${index}.productId`, currentValue, { shouldValidate: true });
                                               setOpenProductCombobox(null)
                                             }}
                                           >
