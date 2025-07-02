@@ -81,14 +81,15 @@ const addOrderSchema = z.object({
 });
 
 
-type AddOrderFormValues = z.infer<typeof addOrderSchema>;
+export type AddOrderFormValues = z.infer<typeof addOrderSchema>;
 
 interface AddOrderDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onAddOrder: (data: AddOrderFormValues) => void;
 }
 
-export function AddOrderDialog({ open, onOpenChange }: AddOrderDialogProps) {
+export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialogProps) {
   const { toast } = useToast();
   const [openProductCombobox, setOpenProductCombobox] = useState<number | null>(null);
 
@@ -131,9 +132,7 @@ export function AddOrderDialog({ open, onOpenChange }: AddOrderDialogProps) {
   }
 
   function onSubmit(data: AddOrderFormValues) {
-    // In a real app, you would add the new order to your data source.
-    // For this prototype, we'll just show a success message.
-    console.log('Novo Pedido:', data);
+    onAddOrder(data);
     toast({
       title: "Pedido Criado com Sucesso!",
       description: `O pedido para ${data.customerName} foi adicionado.`,
@@ -329,11 +328,8 @@ export function AddOrderDialog({ open, onOpenChange }: AddOrderDialogProps) {
                                           <CommandItem
                                             value={product.name}
                                             key={product.id}
-                                            onSelect={(currentValue) => {
-                                              const productToSelect = availableProducts.find(p => p.name === currentValue);
-                                              if (productToSelect) {
-                                                form.setValue(`items.${index}.productId`, productToSelect.id, { shouldValidate: true });
-                                              }
+                                            onSelect={() => {
+                                              form.setValue(`items.${index}.productId`, product.id, { shouldValidate: true });
                                               setOpenProductCombobox(null)
                                             }}
                                           >

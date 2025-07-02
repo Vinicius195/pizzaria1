@@ -13,11 +13,11 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { mockOrders, orderStatuses } from '@/lib/mock-data';
+import { mockOrders, orderStatuses, mockProducts } from '@/lib/mock-data';
 import type { Order, OrderStatus } from '@/types';
 import { Clock, PlusCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AddOrderDialog } from '@/components/app/add-order-dialog';
+import { AddOrderDialog, type AddOrderFormValues } from '@/components/app/add-order-dialog';
 import { OrderDetailsDialog } from '@/components/app/order-details-dialog';
 import { useToast } from '@/hooks/use-toast';
 
@@ -108,7 +108,7 @@ function PedidosPageContent() {
     }
 
     const nextStatusIndex = currentStatusIndex + 1;
-    if (nextStatusIndex < orderStatuses.length && orderStatuses[nextStatusIndex] !== 'Cancelado') {
+    if (nextStatusIndex < orderStatuses.length) {
       const nextStatus = orderStatuses[nextStatusIndex];
       
       setOrders(prevOrders =>
@@ -116,11 +116,13 @@ function PedidosPageContent() {
           order.id === orderId ? { ...order, status: nextStatus } : order
         )
       );
-
-      toast({
-        title: "Status do Pedido Atualizado!",
-        description: `O pedido #${orderId} agora está: ${nextStatus}.`,
-      });
+      
+      if (nextStatus !== 'Cancelado') {
+        toast({
+          title: "Status do Pedido Atualizado!",
+          description: `O pedido #${orderId} agora está: ${nextStatus}.`,
+        });
+      }
     }
   };
 
@@ -128,9 +130,37 @@ function PedidosPageContent() {
     setSelectedOrder(order);
   };
 
+  const handleAddOrder = (data: AddOrderFormValues) => {
+    const newOrderItems = data.items.map(item => {
+      const product = mockProducts.find(p => p.id === item.productId);
+      return {
+        productName: product?.name || 'Produto Desconhecido',
+        quantity: item.quantity,
+        price: product?.price || 0,
+      };
+    });
+
+    const total = newOrderItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+
+    const newOrder: Order = {
+      id: String(Date.now()).slice(-4),
+      customerName: data.customerName,
+      items: newOrderItems.map(({ productName, quantity }) => ({ productName, quantity })),
+      total: total,
+      status: 'Recebido',
+      timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+    };
+
+    setOrders(prevOrders => [newOrder, ...prevOrders]);
+  };
+
   return (
     <>
-      <AddOrderDialog open={isAddOrderDialogOpen} onOpenChange={setIsAddOrderDialogOpen} />
+      <AddOrderDialog 
+        open={isAddOrderDialogOpen} 
+        onOpenChange={setIsAddOrderDialogOpen}
+        onAddOrder={handleAddOrder}
+      />
       <OrderDetailsDialog 
         order={selectedOrder}
         open={!!selectedOrder}
