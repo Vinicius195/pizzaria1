@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/select';
 import type { Product } from '@/types';
 import { useEffect } from 'react';
+import { Textarea } from '@/components/ui/textarea';
 
 const productSchema = z.object({
   name: z.string().min(3, "O nome do produto deve ter pelo menos 3 caracteres."),
@@ -38,6 +39,7 @@ const productSchema = z.object({
     required_error: "Selecione uma categoria.",
   }),
   price: z.coerce.number().min(0.01, "O preço deve ser maior que zero."),
+  description: z.string().optional(),
 });
 
 export type ProductFormValues = z.infer<typeof productSchema>;
@@ -56,8 +58,11 @@ export function AddProductDialog({ open, onOpenChange, onSubmit, product }: AddP
       name: '',
       category: undefined,
       price: 0,
+      description: '',
     },
   });
+
+  const category = form.watch('category');
 
   useEffect(() => {
     if (product) {
@@ -67,6 +72,7 @@ export function AddProductDialog({ open, onOpenChange, onSubmit, product }: AddP
         name: '',
         category: undefined,
         price: 0,
+        description: '',
       });
     }
   }, [product, form, open]);
@@ -128,6 +134,25 @@ export function AddProductDialog({ open, onOpenChange, onSubmit, product }: AddP
                 </FormItem>
               )}
             />
+             {category === 'Pizza' && (
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Ingredientes (Descrição)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Molho de tomate, mussarela, calabresa, etc."
+                        {...field}
+                        value={field.value ?? ''}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             <FormField
               control={form.control}
               name="price"

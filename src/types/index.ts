@@ -6,6 +6,7 @@ export interface Product {
   category: 'Pizza' | 'Bebida' | 'Adicional';
   price: number;
   isAvailable: boolean;
+  description?: string;
 };
 
 export interface Customer {
