@@ -171,7 +171,7 @@ export function AddProductDialog({ open, onOpenChange, onSubmit, product }: AddP
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
-            <div className="space-y-4 overflow-y-auto p-1 pr-4" style={{ maxHeight: 'calc(80vh - 200px)' }}>
+            <div className="space-y-4 overflow-y-auto p-1 pr-4 max-h-[60vh]">
               <FormField
                 control={form.control}
                 name="name"
