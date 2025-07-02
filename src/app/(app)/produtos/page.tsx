@@ -16,6 +16,13 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useUser } from '@/contexts/user-context';
 import { Input } from '@/components/ui/input';
 
+const getProductDisplayName = (p: Product) => {
+  if (p.category === 'Bebida' && p.volume) {
+      return `${p.name} ${p.volume}`;
+  }
+  return p.name;
+};
+
 export default function ProdutosPage() {
   const [products, setProducts] = useState<Product[]>(mockProducts);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -37,7 +44,7 @@ export default function ProdutosPage() {
 
     const filteredProducts = searchQuery
       ? availableProducts.filter(p =>
-          p.name.toLowerCase().includes(searchQuery.toLowerCase())
+          getProductDisplayName(p).toLowerCase().includes(searchQuery.toLowerCase())
         )
       : availableProducts;
     
@@ -50,7 +57,7 @@ export default function ProdutosPage() {
         return acc;
       }, {} as Record<Product['category'], Product[]>);
       
-    const categoryOrder: ('Pizza' | 'Bebida' | 'Adicional')[] = ['Pizza', 'Bebida', 'Adicional'];
+    const categoryOrder: (Product['category'])[] = ['Pizza', 'Bebida', 'Adicional'];
 
     return (
       <div className="space-y-6">
@@ -81,7 +88,7 @@ export default function ProdutosPage() {
                   {groupedProducts[category].map((product) => (
                     <Card key={product.id} className="shadow-md flex flex-col justify-between">
                       <CardHeader>
-                        <CardTitle className="text-lg font-headline">{product.name}</CardTitle>
+                        <CardTitle className="text-lg font-headline">{getProductDisplayName(product)}</CardTitle>
                         {product.category === 'Pizza' && product.description && (
                           <CardDescription className="pt-1 text-sm">{product.description}</CardDescription>
                         )}
@@ -153,7 +160,7 @@ export default function ProdutosPage() {
     setProducts(prev => [...prev, newProduct]);
     toast({
       title: "Produto Duplicado!",
-      description: `O produto "${product.name}" foi duplicado com sucesso.`,
+      description: `O produto "${getProductDisplayName(product)}" foi duplicado com sucesso.`,
     });
   };
 
@@ -163,7 +170,7 @@ export default function ProdutosPage() {
     toast({
       variant: "destructive",
       title: "Produto Deletado!",
-      description: `O produto "${deletingProduct.name}" foi removido.`,
+      description: `O produto "${getProductDisplayName(deletingProduct)}" foi removido.`,
     });
     setDeletingProduct(null);
   };
@@ -195,14 +202,15 @@ export default function ProdutosPage() {
     }
 
     if (editingProduct) {
+        const updatedProduct = { ...editingProduct, ...productData };
         setProducts(prev =>
             prev.map(p =>
-                p.id === editingProduct.id ? { ...p, ...productData } : p
+                p.id === editingProduct.id ? updatedProduct : p
             )
         );
         toast({
             title: "Produto Atualizado!",
-            description: `O produto "${data.name}" foi atualizado com sucesso.`,
+            description: `O produto "${getProductDisplayName(updatedProduct)}" foi atualizado com sucesso.`,
         });
     } else {
         const newProduct: Product = {
@@ -213,33 +221,21 @@ export default function ProdutosPage() {
         setProducts(prev => [...prev, newProduct]);
         toast({
             title: "Produto Adicionado!",
-            description: `O produto "${data.name}" foi adicionado com sucesso.`,
+            description: `O produto "${getProductDisplayName(newProduct)}" foi adicionado com sucesso.`,
         });
     }
   };
 
   const groupedProducts = products.reduce((acc, product) => {
     const { category } = product;
-    if (category === 'Bebida') return acc; // Bebidas são tratadas separadamente
     if (!acc[category]) {
       acc[category] = [];
     }
     acc[category].push(product);
     return acc;
-  }, {} as Record<'Pizza' | 'Adicional', Product[]>);
+  }, {} as Record<Product['category'], Product[]>);
 
-  const drinkGroups = products
-    .filter((p) => p.category === 'Bebida')
-    .reduce((acc, product) => {
-        const volume = product.volume || 'Tamanho único';
-        if (!acc[volume]) {
-            acc[volume] = [];
-        }
-        acc[volume].push(product);
-        return acc;
-    }, {} as Record<string, Product[]>);
-
-  const categoryOrder: ('Pizza' | 'Adicional')[] = ['Pizza', 'Adicional'];
+  const categoryOrder: (Product['category'])[] = ['Pizza', 'Bebida', 'Adicional'];
 
   return (
     <>
@@ -256,7 +252,7 @@ export default function ProdutosPage() {
             <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
             <AlertDialogDescription>
               Essa ação não pode ser desfeita. Isso irá deletar permanentemente o produto
-              <span className="font-bold"> "{deletingProduct?.name}"</span>.
+              <span className="font-bold"> "{deletingProduct ? getProductDisplayName(deletingProduct) : ''}"</span>.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -292,8 +288,8 @@ export default function ProdutosPage() {
                     <Card key={product.id} className="shadow-md hover:shadow-lg transition-shadow flex flex-col justify-between">
                       <div>
                         <CardHeader className="flex flex-row items-start justify-between pb-2">
-                          <CardTitle className="text-lg font-headline truncate" title={product.name}>
-                            {product.name}
+                          <CardTitle className="text-lg font-headline truncate" title={getProductDisplayName(product)}>
+                            {getProductDisplayName(product)}
                           </CardTitle>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -368,71 +364,6 @@ export default function ProdutosPage() {
               </section>
             )
           ))}
-
-          {Object.keys(drinkGroups).length > 0 && (
-            <section>
-              <h2 className="text-2xl font-bold font-headline mb-4 pb-2 border-b-2 border-primary/20">
-                Bebidas
-              </h2>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-                {Object.entries(drinkGroups).map(([volume, drinkList]) => (
-                  <Card key={volume} className="shadow-md hover:shadow-lg transition-shadow flex flex-col">
-                    <CardHeader>
-                      <CardTitle className="text-lg font-headline">{volume}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-0 pb-4 px-6 flex-1">
-                      <div className="space-y-3">
-                        {drinkList.map((drink) => (
-                          <div key={drink.id} className="flex items-center justify-between gap-2">
-                            <div className="flex-1 space-y-1">
-                              <Label htmlFor={`available-${drink.id}`} className="font-normal text-sm truncate" title={drink.name}>
-                                {drink.name}
-                              </Label>
-                              <div className="text-sm font-semibold text-muted-foreground">
-                                 {Number(drink.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                              </div>
-                            </div>
-                            <div className="flex items-center shrink-0">
-                               <Switch
-                                id={`available-${drink.id}`}
-                                checked={drink.isAvailable}
-                                onCheckedChange={(checked) => handleToggleAvailable(drink.id, checked)}
-                                aria-label={`Disponibilidade do produto ${drink.name}`}
-                              />
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button aria-haspopup="true" size="icon" variant="ghost" className="h-8 w-8">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                    <span className="sr-only">Toggle menu for {drink.name}</span>
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                  <DropdownMenuItem onClick={() => handleOpenEditDialog(drink)}>
-                                    Editar
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleDuplicateProduct(drink)}>
-                                    Duplicar
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem
-                                    className="text-destructive focus:text-destructive-foreground focus:bg-destructive"
-                                    onClick={() => setDeletingProduct(drink)}
-                                  >
-                                    Deletar
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </section>
-          )}
         </div>
       </div>
     </>
