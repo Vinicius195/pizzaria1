@@ -93,7 +93,7 @@ function PedidosPageContent() {
   
   const [isAddOrderDialogOpen, setIsAddOrderDialogOpen] = useState(false);
   const [orders, setOrders] = useState<Order[]>(() => 
-    mockOrders.slice().sort((a, b) => parseInt(b.id, 10) - parseInt(a.id, 10))
+    mockOrders.slice().sort((a, b) => parseInt(a.id, 10) - parseInt(b.id, 10))
   );
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   
@@ -155,7 +155,7 @@ function PedidosPageContent() {
       timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
     };
 
-    setOrders(prevOrders => [newOrder, ...prevOrders]);
+    setOrders(prevOrders => [...prevOrders, newOrder]);
   };
 
   return (
