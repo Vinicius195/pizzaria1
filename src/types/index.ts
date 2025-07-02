@@ -39,3 +39,17 @@ export interface Order {
   locationLink?: string;
   notes?: string;
 };
+
+export type UserRole = 'Administrador' | 'Funcionário';
+export type UserStatus = 'Aprovado' | 'Pendente' | 'Reprovado';
+
+export interface UserProfile {
+  key: string;
+  name: string;
+  email: string;
+  password?: string;
+  role: UserRole;
+  status: UserStatus;
+  avatar: string;
+  fallback: string;
+}

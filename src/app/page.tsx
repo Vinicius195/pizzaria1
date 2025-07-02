@@ -18,6 +18,7 @@ import { Pizza, LogIn, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/contexts/user-context';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import Link from 'next/link';
 
 const loginSchema = z.object({
   email: z.string().email("Por favor, insira um e-mail válido."),
@@ -41,11 +42,11 @@ export default function LoginPage() {
 
   const handleLogin = (data: LoginFormValues) => {
     setLoginError(null);
-    const success = login(data.email, data.password);
-    if (success) {
+    const result = login(data.email, data.password);
+    if (result.success) {
       router.push('/dashboard');
     } else {
-      setLoginError("E-mail ou senha inválidos. Tente novamente.");
+      setLoginError(result.message);
       form.resetField('password');
     }
   };
@@ -111,9 +112,13 @@ export default function LoginPage() {
             </form>
           </Form>
         </Card>
-        <div className="text-center text-xs text-muted-foreground">
-          <p>Use <span className="font-semibold">sergio.lemos@belamassa.com</span> (senha: admin) para acesso de Administrador.</p>
-          <p>Use <span className="font-semibold">beatriz.costa@belamassa.com</span> (senha: func) para acesso de Funcionário.</p>
+        <div className="text-center text-sm">
+          <p className="text-muted-foreground">
+            Não tem uma conta?{' '}
+            <Link href="/registrar" className="font-medium text-primary underline-offset-4 hover:underline">
+              Crie uma aqui
+            </Link>
+          </p>
         </div>
       </div>
     </div>
