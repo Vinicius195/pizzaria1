@@ -68,7 +68,7 @@ const assistantFlow = ai.defineFlow({
         tools: [getOrderInfo, getCustomerInfo],
     });
 
-    return llmResponse.text();
+    return llmResponse.text;
 });
 
 export async function processAgentCommand(input: AssistantInput): Promise<string> {
