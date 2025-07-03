@@ -16,7 +16,7 @@ type Message = {
 };
 
 export function Assistant() {
-  const { currentUser } = useUser();
+  const { currentUser, orders, customers } = useUser();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', content: 'Olá! Como posso ajudar você a gerenciar a pizzaria hoje?' }
@@ -44,6 +44,8 @@ export function Assistant() {
       const response = await processAgentCommand({
         command: currentInput,
         role: currentUser.role,
+        orders: orders,
+        customers: customers,
       });
       const assistantMessage: Message = { role: 'assistant', content: response };
       setMessages(prev => [...prev, assistantMessage]);
