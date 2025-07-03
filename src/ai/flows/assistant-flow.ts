@@ -42,7 +42,7 @@ const getCustomerInfo = ai.defineTool({
 });
 
 // Input schema for the main flow
-export const AssistantInputSchema = z.object({
+const AssistantInputSchema = z.object({
   command: z.string(),
   role: z.custom<UserRole>(),
 });
