@@ -117,12 +117,13 @@ export function AddProductDialog({ open, onOpenChange, onSubmit, product }: AddP
     name: "drinkSizes",
   });
 
-  const category = form.watch('category');
+  const { reset, watch } = form;
+  const category = watch('category');
 
   useEffect(() => {
     if (open) {
       if (product) {
-        form.reset({
+        reset({
           name: product.name,
           category: product.category,
           description: product.description || '',
@@ -138,7 +139,7 @@ export function AddProductDialog({ open, onOpenChange, onSubmit, product }: AddP
             : [],
         });
       } else {
-        form.reset({
+        reset({
           name: '',
           category: undefined,
           price: 0,
@@ -148,7 +149,7 @@ export function AddProductDialog({ open, onOpenChange, onSubmit, product }: AddP
         });
       }
     }
-  }, [product, open, form]);
+  }, [product, open, reset]);
 
   const handleDialogClose = () => {
     onOpenChange(false);

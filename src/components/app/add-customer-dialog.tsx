@@ -58,13 +58,14 @@ export function AddCustomerDialog({ open, onOpenChange, onSubmit, customer }: Ad
     },
   });
   
-  const addressType = form.watch('addressType');
+  const { reset, watch, setValue } = form;
+  const addressType = watch('addressType');
 
   useEffect(() => {
     if (open) {
       if (customer) {
         const initialAddressType = customer.locationLink ? 'link' : 'manual';
-        form.reset({
+        reset({
           name: customer.name || '',
           phone: customer.phone || '',
           addressType: initialAddressType,
@@ -72,7 +73,7 @@ export function AddCustomerDialog({ open, onOpenChange, onSubmit, customer }: Ad
           locationLink: customer.locationLink || '',
         });
       } else {
-        form.reset({
+        reset({
           name: '',
           phone: '',
           addressType: 'manual',
@@ -81,7 +82,7 @@ export function AddCustomerDialog({ open, onOpenChange, onSubmit, customer }: Ad
         });
       }
     }
-  }, [customer, open, form]);
+  }, [customer, open, reset]);
 
   const handleDialogClose = () => {
     onOpenChange(false);
@@ -146,9 +147,9 @@ export function AddCustomerDialog({ open, onOpenChange, onSubmit, customer }: Ad
                         onValueChange={(value) => {
                           field.onChange(value);
                           if (value === 'link') {
-                            form.setValue('address', customer?.address || '');
+                            setValue('address', '');
                           } else {
-                            form.setValue('locationLink', customer?.locationLink || '');
+                            setValue('locationLink', '');
                           }
                         }}
                         defaultValue={field.value}

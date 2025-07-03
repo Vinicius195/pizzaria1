@@ -177,10 +177,10 @@ export function AddOrderDialog({ open, onOpenChange, onSubmit, order }: AddOrder
     name: "items",
   });
   
-  const watchedItems = form.watch('items');
-
-  const orderType = form.watch('orderType');
-  const addressType = form.watch('addressType');
+  const { watch, reset, setValue } = form;
+  const watchedItems = watch('items');
+  const orderType = watch('orderType');
+  const addressType = watch('addressType');
 
   const availableProducts = mockProducts.filter((p) => p.isAvailable);
   const availablePizzas = availableProducts.filter((p) => p.category === 'Pizza');
@@ -227,7 +227,7 @@ export function AddOrderDialog({ open, onOpenChange, onSubmit, order }: AddOrder
 
         const addressType = order.locationLink ? 'link' : 'manual';
 
-        form.reset({
+        reset({
             customerName: order.customerName,
             customerPhone: order.customerPhone || '',
             orderType: order.orderType,
@@ -239,7 +239,7 @@ export function AddOrderDialog({ open, onOpenChange, onSubmit, order }: AddOrder
         });
 
       } else {
-        form.reset({
+        reset({
           customerName: '',
           customerPhone: '',
           orderType: 'retirada',
@@ -251,7 +251,7 @@ export function AddOrderDialog({ open, onOpenChange, onSubmit, order }: AddOrder
         });
       }
     }
-  }, [order, open, form, isEditMode, availableProducts, availablePizzas]);
+  }, [order, open, reset, isEditMode, availableProducts, availablePizzas]);
 
 
   const handleClose = () => {
@@ -354,8 +354,8 @@ export function AddOrderDialog({ open, onOpenChange, onSubmit, order }: AddOrder
                           <RadioGroup
                             onValueChange={(value) => {
                               field.onChange(value);
-                              form.setValue('address', '');
-                              form.setValue('locationLink', '');
+                              setValue('address', '');
+                              setValue('locationLink', '');
                             }}
                             defaultValue={field.value}
                             className="flex flex-col space-y-2 pt-1"
@@ -479,10 +479,10 @@ export function AddOrderDialog({ open, onOpenChange, onSubmit, order }: AddOrder
                                                 value={product.name}
                                                 key={product.id}
                                                 onSelect={() => {
-                                                  form.setValue(`items.${index}.productId`, product.id, { shouldValidate: true });
-                                                  form.setValue(`items.${index}.size`, undefined, { shouldValidate: true });
-                                                  form.setValue(`items.${index}.isHalfHalf`, false, { shouldValidate: true });
-                                                  form.setValue(`items.${index}.product2Id`, undefined, { shouldValidate: true });
+                                                  setValue(`items.${index}.productId`, product.id, { shouldValidate: true });
+                                                  setValue(`items.${index}.size`, undefined, { shouldValidate: true });
+                                                  setValue(`items.${index}.isHalfHalf`, false, { shouldValidate: true });
+                                                  setValue(`items.${index}.product2Id`, undefined, { shouldValidate: true });
                                                   setOpenProductCombobox(null)
                                                 }}
                                               >
@@ -545,7 +545,7 @@ export function AddOrderDialog({ open, onOpenChange, onSubmit, order }: AddOrder
                                         onCheckedChange={(checked) => {
                                             switchField.onChange(checked);
                                             if (!checked) {
-                                                form.setValue(`items.${index}.product2Id`, undefined, { shouldValidate: true });
+                                                setValue(`items.${index}.product2Id`, undefined, { shouldValidate: true });
                                             }
                                         }}
                                     />
@@ -591,7 +591,7 @@ export function AddOrderDialog({ open, onOpenChange, onSubmit, order }: AddOrder
                                                 value={pizza.name}
                                                 key={pizza.id}
                                                 onSelect={() => {
-                                                    form.setValue(`items.${index}.product2Id`, pizza.id, { shouldValidate: true });
+                                                    setValue(`items.${index}.product2Id`, pizza.id, { shouldValidate: true });
                                                     setOpenProduct2Combobox(null)
                                                 }}
                                                 >

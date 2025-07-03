@@ -46,16 +46,18 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
     resolver: zodResolver(editUserSchema),
   });
 
+  const { reset } = form;
+
   useEffect(() => {
     if (user && open) {
-      form.reset({
+      reset({
         name: user.name,
         email: user.email.split('@')[0],
         role: user.role,
         password: '', // Always clear password on open
       });
     }
-  }, [user, open, form]);
+  }, [user, open, reset]);
 
   const handleFormSubmit = (data: EditUserFormValues) => {
     if (!user) return;
