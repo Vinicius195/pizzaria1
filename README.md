@@ -57,12 +57,12 @@ CREATE TABLE public.customers (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   name text NOT NULL,
-  phone text NOT NULL,
+  phone text,
   address text,
   "locationLink" text,
-  "lastOrderDate" date NOT NULL,
-  "totalSpent" numeric NOT NULL,
-  "orderCount" integer NOT NULL,
+  "lastOrderDate" date,
+  "totalSpent" numeric NOT NULL DEFAULT 0,
+  "orderCount" integer NOT NULL DEFAULT 0,
   PRIMARY KEY (id)
 );
 ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
