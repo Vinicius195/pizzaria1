@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { mockProducts } from '@/lib/mock-data';
 import type { Product, PizzaSize } from '@/types';
 import { MoreHorizontal, PlusCircle, Search, Pizza } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -16,26 +15,50 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useUser } from '@/contexts/user-context';
 import { Input } from '@/components/ui/input';
 import { getMockSettings } from '@/lib/settings-data';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ProdutosPage() {
-  const [products, setProducts] = useState<Product[]>(mockProducts);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
-  const { currentUser } = useUser();
+  const { 
+    currentUser, 
+    products, 
+    isLoading, 
+    toggleProductAvailability, 
+    addProduct, 
+    updateProduct,
+    deleteProduct,
+  } = useUser();
   const settings = getMockSettings();
 
-  if (!currentUser) {
-    return null; // Or a skeleton loader
+  if (isLoading || !currentUser) {
+    return <ProdutosPageSkeleton />;
   }
 
   const isManager = currentUser.role === 'Administrador';
 
+  const handleSubmitProduct = (data: ProductFormValues) => {
+    if (editingProduct) {
+        updateProduct(editingProduct.id, data);
+        toast({
+            title: "Produto Atualizado!",
+            description: `O produto "${data.name}" foi atualizado com sucesso.`,
+        });
+    } else {
+        addProduct(data);
+        toast({
+            title: "Produto Adicionado!",
+            description: `O produto "${data.name}" foi adicionado com sucesso.`,
+        });
+    }
+  };
+
   // Employee-facing menu view
   if (!isManager) {
-    const availableProducts = mockProducts.filter(p => p.isAvailable);
+    const availableProducts = products.filter(p => p.isAvailable);
 
     const filteredProducts = searchQuery
       ? availableProducts.filter(
@@ -136,11 +159,7 @@ export default function ProdutosPage() {
 
   // Admin-facing management view
   const handleToggleAvailable = (productId: string, isAvailable: boolean) => {
-    setProducts(prev =>
-      prev.map(p =>
-        p.id === productId ? { ...p, isAvailable } : p
-      )
-    );
+    toggleProductAvailability(productId, isAvailable);
   };
   
   const handleOpenAddDialog = () => {
@@ -154,12 +173,18 @@ export default function ProdutosPage() {
   };
 
   const handleDuplicateProduct = (product: Product) => {
-    const newProduct: Product = {
-      ...product,
-      id: String(Date.now()),
-      name: `${product.name} (Cópia)`,
-    };
-    setProducts(prev => [...prev, newProduct]);
+    const { id, isAvailable, ...productData } = product;
+    const data: ProductFormValues = {
+        name: `${product.name} (Cópia)`,
+        category: product.category,
+        description: product.description,
+        price: product.price,
+        pizzaSizes: product.category === 'Pizza' ? product.sizes : undefined,
+        drinkSizes: product.category === 'Bebida' && product.sizes 
+            ? Object.entries(product.sizes).map(([name, price]) => ({name, price}))
+            : undefined,
+    }
+    addProduct(data);
     toast({
       title: "Produto Duplicado!",
       description: `O produto "${product.name}" foi duplicado com sucesso.`,
@@ -168,7 +193,7 @@ export default function ProdutosPage() {
 
   const handleConfirmDelete = () => {
     if (!deletingProduct) return;
-    setProducts(prev => prev.filter(p => p.id !== deletingProduct.id));
+    deleteProduct(deletingProduct.id);
     toast({
       variant: "destructive",
       title: "Produto Deletado!",
@@ -177,62 +202,6 @@ export default function ProdutosPage() {
     setDeletingProduct(null);
   };
   
-  const handleSubmitProduct = (data: ProductFormValues) => {
-    let productData: Omit<Product, 'id' | 'isAvailable'>;
-    
-    if (data.category === 'Pizza') {
-        productData = {
-            name: data.name,
-            category: 'Pizza',
-            description: data.description,
-            sizes: data.pizzaSizes
-        };
-    } else if (data.category === 'Bebida') {
-        const drinkSizes = data.drinkSizes?.reduce((acc, variant) => {
-            if (variant.name && variant.price) {
-                acc[variant.name] = variant.price;
-            }
-            return acc;
-        }, {} as Record<string, number>);
-
-        productData = {
-            name: data.name,
-            category: 'Bebida',
-            sizes: drinkSizes,
-        };
-    } else { // Adicional
-        productData = {
-            name: data.name,
-            category: 'Adicional',
-            price: data.price,
-        };
-    }
-
-    if (editingProduct) {
-        const updatedProduct = { ...editingProduct, ...productData };
-        setProducts(prev =>
-            prev.map(p =>
-                p.id === editingProduct.id ? updatedProduct : p
-            )
-        );
-        toast({
-            title: "Produto Atualizado!",
-            description: `O produto "${updatedProduct.name}" foi atualizado com sucesso.`,
-        });
-    } else {
-        const newProduct: Product = {
-            id: String(Date.now()),
-            isAvailable: true,
-            ...productData,
-        };
-        setProducts(prev => [...prev, newProduct]);
-        toast({
-            title: "Produto Adicionado!",
-            description: `O produto "${newProduct.name}" foi adicionado com sucesso.`,
-        });
-    }
-  };
-
   const filteredProductsForAdmin = searchQuery
     ? products.filter(
         p =>
@@ -355,7 +324,7 @@ export default function ProdutosPage() {
                                 <div key={size} className="flex justify-between items-center text-sm">
                                   <span className="text-muted-foreground capitalize">{size}</span>
                                   <span className="font-semibold">
-                                    {price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                    {Number(price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                   </span>
                                 </div>
                               ))}
@@ -363,7 +332,7 @@ export default function ProdutosPage() {
                           )}
                            {product.price && (
                               <div className="text-lg font-bold text-right pt-2">
-                                {product.price.toLocaleString('pt-BR', {
+                                {Number(product.price).toLocaleString('pt-BR', {
                                   style: 'currency',
                                   currency: 'BRL',
                                 })}
@@ -399,4 +368,40 @@ export default function ProdutosPage() {
       </div>
     </>
   );
+}
+
+function ProdutosPageSkeleton() {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <Skeleton className="h-9 w-48" />
+            <Skeleton className="h-4 w-72 mt-2" />
+          </div>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Skeleton className="h-10 flex-grow" />
+            <Skeleton className="h-10 w-40" />
+          </div>
+        </div>
+
+        <div className="space-y-8">
+            <section>
+                <Skeleton className="h-8 w-32 mb-4" />
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                        <Skeleton key={i} className="h-[250px] w-full" />
+                    ))}
+                </div>
+            </section>
+             <section>
+                <Skeleton className="h-8 w-32 mb-4" />
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+                    {Array.from({ length: 2 }).map((_, i) => (
+                        <Skeleton key={i} className="h-[250px] w-full" />
+                    ))}
+                </div>
+            </section>
+        </div>
+      </div>
+    );
 }

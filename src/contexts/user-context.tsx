@@ -1,10 +1,11 @@
 'use client';
 
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import type { UserProfile, UserRole, UserStatus, Customer, Notification, Order, OrderStatus } from '@/types';
+import type { UserProfile, UserRole, UserStatus, Customer, Notification, Order, OrderStatus, Product } from '@/types';
 import { mockCustomers, mockProducts, mockOrders, orderStatuses } from '@/lib/mock-data';
 import type { AddOrderFormValues } from '@/components/app/add-order-dialog';
 import { useToast } from '@/hooks/use-toast';
+import type { ProductFormValues } from '@/components/app/add-product-dialog';
 
 // Mock initial data. In a real app, this might be an empty array.
 const initialUserProfiles: UserProfile[] = [
@@ -36,21 +37,31 @@ export type CustomerData = Partial<Omit<Customer, 'id'>> & {
 
 interface UserContextType {
   currentUser: UserProfile | null;
+  isLoading: boolean;
+  // Users
   users: UserProfile[];
-  customers: Customer[];
-  orders: Order[];
   login: (email: string, pass: string) => LoginResult;
   logout: () => void;
   registerUser: (details: Omit<UserProfile, 'key' | 'status' | 'avatar' | 'fallback'>) => RegisterResult;
   updateUserStatus: (key: string, status: UserStatus) => void;
   updateUser: (key: string, data: Partial<UserProfile>) => RegisterResult;
   deleteUser: (key: string) => void;
+  // Customers
+  customers: Customer[];
   addOrUpdateCustomer: (data: CustomerData) => void;
-  isLoading: boolean;
+  // Products
+  products: Product[];
+  toggleProductAvailability: (productId: string, isAvailable: boolean) => void;
+  addProduct: (productData: ProductFormValues) => void;
+  updateProduct: (productId: string, productData: ProductFormValues) => void;
+  deleteProduct: (productId: string) => void;
+  // Notifications
   notifications: Notification[];
   addNotification: (notification: Omit<Notification, 'id' | 'timestamp' | 'isRead'>) => void;
   markNotificationAsRead: (id: string) => void;
   markAllNotificationsAsRead: () => void;
+  // Orders
+  orders: Order[];
   advanceOrderStatus: (orderId: string) => void;
   addOrder: (data: AddOrderFormValues) => void;
   updateOrder: (orderId: string, data: AddOrderFormValues) => void;
@@ -62,6 +73,7 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 
 const USERS_STORAGE_KEY = 'pizzafast-users';
 const CUSTOMERS_STORAGE_KEY = 'pizzafast-customers';
+const PRODUCTS_STORAGE_KEY = 'pizzafast-products';
 const NOTIFICATIONS_STORAGE_KEY = 'pizzafast-notifications';
 const ORDERS_STORAGE_KEY = 'pizzafast-orders';
 const CURRENT_USER_STORAGE_KEY = 'currentUserKey';
@@ -70,6 +82,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [currentUserKey, setCurrentUserKey] = useState<string | null>(null);
@@ -78,85 +91,51 @@ export function UserProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
         const storedUsers = localStorage.getItem(USERS_STORAGE_KEY);
-        if (storedUsers) {
-            setUsers(JSON.parse(storedUsers));
-        } else {
-            setUsers(initialUserProfiles);
-            localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(initialUserProfiles));
-        }
+        setUsers(storedUsers ? JSON.parse(storedUsers) : initialUserProfiles);
         
         const storedCustomers = localStorage.getItem(CUSTOMERS_STORAGE_KEY);
-        if (storedCustomers) {
-            setCustomers(JSON.parse(storedCustomers));
-        } else {
-            setCustomers(mockCustomers);
-            localStorage.setItem(CUSTOMERS_STORAGE_KEY, JSON.stringify(mockCustomers));
-        }
+        setCustomers(storedCustomers ? JSON.parse(storedCustomers) : mockCustomers);
+
+        const storedProducts = localStorage.getItem(PRODUCTS_STORAGE_KEY);
+        setProducts(storedProducts ? JSON.parse(storedProducts) : mockProducts);
 
         const storedNotifications = localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
-        if (storedNotifications) {
-            setNotifications(JSON.parse(storedNotifications));
-        }
+        setNotifications(storedNotifications ? JSON.parse(storedNotifications) : []);
 
         const storedOrders = localStorage.getItem(ORDERS_STORAGE_KEY);
-        if (storedOrders) {
-            setOrders(JSON.parse(storedOrders));
-        } else {
-            const sortedMockOrders = mockOrders.slice().sort((a, b) => parseInt(b.id, 10) - parseInt(a.id, 10));
-            setOrders(sortedMockOrders);
-            localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(sortedMockOrders));
-        }
+        const sortedMockOrders = mockOrders.slice().sort((a, b) => parseInt(b.id, 10) - parseInt(a.id, 10));
+        setOrders(storedOrders ? JSON.parse(storedOrders) : sortedMockOrders);
 
         const storedUserKey = localStorage.getItem(CURRENT_USER_STORAGE_KEY);
-        if (storedUserKey) {
-            setCurrentUserKey(storedUserKey);
-        }
+        setCurrentUserKey(storedUserKey);
     } catch (error) {
-        console.error("Could not access localStorage.", error);
-        setUsers(initialUserProfiles); // fallback
+        console.error("Could not access localStorage. Using mock data.", error);
+        setUsers(initialUserProfiles);
         setCustomers(mockCustomers);
+        setProducts(mockProducts);
         setOrders(mockOrders);
     } finally {
         setIsLoading(false);
     }
   }, []);
-
-  const saveUsers = (updatedUsers: UserProfile[]) => {
-    setUsers(updatedUsers);
-    try {
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
-    } catch (error) {
-      console.error("Could not save users to localStorage.", error);
-    }
-  };
   
-  const saveCustomers = (updatedCustomers: Customer[]) => {
-    setCustomers(updatedCustomers);
-    try {
-      localStorage.setItem(CUSTOMERS_STORAGE_KEY, JSON.stringify(updatedCustomers));
-    } catch (error) {
-      console.error("Could not save customers to localStorage.", error);
-    }
+  // --- Generic Savers ---
+  const saveData = <T,>(key: string, data: T, setter: React.Dispatch<React.SetStateAction<T>>) => {
+      setter(data);
+      try {
+          localStorage.setItem(key, JSON.stringify(data));
+      } catch (error) {
+          console.error(`Could not save to localStorage key "${key}".`, error);
+      }
   };
 
-  const saveNotifications = (updatedNotifications: Notification[]) => {
-    setNotifications(updatedNotifications);
-    try {
-      localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(updatedNotifications));
-    } catch (error) {
-      console.error("Could not save notifications to localStorage.", error);
-    }
-  };
+  const saveUsers = (data: UserProfile[]) => saveData(USERS_STORAGE_KEY, data, setUsers);
+  const saveCustomers = (data: Customer[]) => saveData(CUSTOMERS_STORAGE_KEY, data, setCustomers);
+  const saveProducts = (data: Product[]) => saveData(PRODUCTS_STORAGE_KEY, data, setProducts);
+  const saveNotifications = (data: Notification[]) => saveData(NOTIFICATIONS_STORAGE_KEY, data, setNotifications);
+  const saveOrders = (data: Order[]) => saveData(ORDERS_STORAGE_KEY, data, setOrders);
   
-  const saveOrders = (updatedOrders: Order[]) => {
-    setOrders(updatedOrders);
-    try {
-      localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(updatedOrders));
-    } catch (error) {
-      console.error("Could not save orders to localStorage.", error);
-    }
-  };
-
+  // --- User Management ---
   const currentUser = currentUserKey ? users.find(u => u.key === currentUserKey) ?? null : null;
 
   const login = (email: string, pass: string): LoginResult => {
@@ -265,18 +244,18 @@ export function UserProvider({ children }: { children: ReactNode }) {
     saveUsers(updatedUsers);
   };
 
+  // --- Customer Management ---
   const addOrUpdateCustomer = (data: CustomerData) => {
     setCustomers(prevCustomers => {
-        // Try to find by ID (for edits) or by phone/name (for updates from orders)
         const existingCustomerIndex = prevCustomers.findIndex(c => 
             (data.id && c.id === data.id) || 
             (data.phone && c.phone === data.phone && c.phone !== '') || 
             (c.name.toLowerCase() === data.name.toLowerCase())
         );
 
+        let updatedCustomers: Customer[];
         if (existingCustomerIndex > -1) {
-            // Update existing customer
-            const updatedCustomers = [...prevCustomers];
+            updatedCustomers = [...prevCustomers];
             const existing = updatedCustomers[existingCustomerIndex];
             updatedCustomers[existingCustomerIndex] = {
                 ...existing,
@@ -285,10 +264,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 orderCount: existing.orderCount + (data.orderTotal ? 1 : 0),
                 lastOrderDate: data.orderTotal ? new Date().toISOString().split('T')[0] : existing.lastOrderDate,
             };
-            saveCustomers(updatedCustomers);
-            return updatedCustomers;
         } else {
-            // Add new customer
             const newCustomer: Customer = {
                 id: String(Date.now()),
                 name: data.name,
@@ -299,13 +275,73 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 totalSpent: data.orderTotal || 0,
                 orderCount: data.orderTotal ? 1 : 0,
             };
-            const newCustomers = [...prevCustomers, newCustomer];
-            saveCustomers(newCustomers);
-            return newCustomers;
+            updatedCustomers = [...prevCustomers, newCustomer];
         }
+        saveCustomers(updatedCustomers);
+        return updatedCustomers;
     });
   };
 
+  // --- Product Management ---
+  const toggleProductAvailability = (productId: string, isAvailable: boolean) => {
+    const updatedProducts = products.map(p =>
+      p.id === productId ? { ...p, isAvailable } : p
+    );
+    saveProducts(updatedProducts);
+  };
+  
+  const addProduct = (data: ProductFormValues) => {
+      const productData = transformProductForm(data);
+      const newProduct: Product = {
+          id: String(Date.now()),
+          isAvailable: true,
+          ...productData,
+      };
+      saveProducts([...products, newProduct].sort((a, b) => a.name.localeCompare(b.name)));
+  };
+
+  const updateProduct = (productId: string, data: ProductFormValues) => {
+      const productData = transformProductForm(data);
+      const updatedProducts = products.map(p =>
+          p.id === productId ? { ...p, ...productData } : p
+      );
+      saveProducts(updatedProducts.sort((a, b) => a.name.localeCompare(b.name)));
+  };
+
+  const deleteProduct = (productId: string) => {
+      saveProducts(products.filter(p => p.id !== productId));
+  };
+  
+  const transformProductForm = (data: ProductFormValues): Omit<Product, 'id' | 'isAvailable'> => {
+      if (data.category === 'Pizza') {
+          return {
+              name: data.name,
+              category: 'Pizza',
+              description: data.description,
+              sizes: data.pizzaSizes,
+          };
+      } else if (data.category === 'Bebida') {
+          const drinkSizes = data.drinkSizes?.reduce((acc, variant) => {
+              if (variant.name && variant.price) {
+                  acc[variant.name] = variant.price;
+              }
+              return acc;
+          }, {} as Record<string, number>);
+          return {
+              name: data.name,
+              category: 'Bebida',
+              sizes: drinkSizes,
+          };
+      } else { // Adicional
+          return {
+              name: data.name,
+              category: 'Adicional',
+              price: data.price,
+          };
+      }
+  };
+
+  // --- Notification Management ---
   const addNotification = (notificationData: Omit<Notification, 'id' | 'timestamp' | 'isRead'>) => {
     const newNotification: Notification = {
       ...notificationData,
@@ -313,27 +349,25 @@ export function UserProvider({ children }: { children: ReactNode }) {
       timestamp: new Date().toISOString(),
       isRead: false,
     };
-
     setNotifications(prev => {
-      const updatedNotifications = [newNotification, ...prev].slice(0, 50); // Keep last 50
-      saveNotifications(updatedNotifications);
-      return updatedNotifications;
+      const updated = [newNotification, ...prev].slice(0, 50); // Keep last 50
+      saveNotifications(updated);
+      return updated;
     });
   };
 
   const markNotificationAsRead = (id: string) => {
-    const updated = notifications.map(n => (n.id === id ? { ...n, isRead: true } : n));
-    saveNotifications(updated);
+    saveNotifications(notifications.map(n => (n.id === id ? { ...n, isRead: true } : n)));
   };
 
   const markAllNotificationsAsRead = () => {
     if (!currentUser) return;
-    const updated = notifications.map(n =>
+    saveNotifications(notifications.map(n =>
       n.targetRoles.includes(currentUser.role) ? { ...n, isRead: true } : n
-    );
-    saveNotifications(updated);
+    ));
   };
 
+  // --- Order Management ---
   const advanceOrderStatus = (orderId: string) => {
     const originalOrder = orders.find(o => o.id === orderId);
     if (!originalOrder) return;
@@ -345,14 +379,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     if (!isActionable) return;
 
-    // Special logic for 'Pronto' state based on order type
     if (originalOrder.status === 'Pronto') {
         nextStatus = originalOrder.orderType === 'retirada' ? 'Entregue' : 'Em Entrega';
     } else {
         const nextStatusIndex = currentStatusIndex + 1;
         if (nextStatusIndex < orderStatuses.length) {
             const potentialNextStatus = orderStatuses[nextStatusIndex];
-            // Skip 'Cancelado' in the normal flow
             if (potentialNextStatus !== 'Cancelado') {
                 nextStatus = potentialNextStatus;
             }
@@ -361,8 +393,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     if (!nextStatus) return;
 
-    const updatedOrders = orders.map(o => o.id === orderId ? { ...o, status: nextStatus! } : o);
-    saveOrders(updatedOrders);
+    saveOrders(orders.map(o => o.id === orderId ? { ...o, status: nextStatus! } : o));
 
     toast({
         title: "Status do Pedido Atualizado!",
@@ -417,197 +448,115 @@ export function UserProvider({ children }: { children: ReactNode }) {
   
   const addOrder = (data: AddOrderFormValues) => {
     const orderItemsWithDetails = data.items.map(item => {
-        const product1 = mockProducts.find(p => p.id === item.productId);
+        const product1 = products.find(p => p.id === item.productId);
         if (!product1) return null;
 
         if (item.isHalfHalf && item.size) {
-            const product2 = mockProducts.find(p => p.id === item.product2Id);
+            const product2 = products.find(p => p.id === item.product2Id);
             if (!product2) return null;
-
             const price1 = product1.sizes?.[item.size] ?? 0;
             const price2 = product2.sizes?.[item.size] ?? 0;
-            const finalPrice = Math.max(price1, price2);
-
             return {
                 productName: `Meio a Meio: ${product1.name} / ${product2.name}`,
-                quantity: item.quantity,
-                size: item.size,
-                price: finalPrice,
+                quantity: item.quantity, size: item.size, price: Math.max(price1, price2),
             };
         }
         
-        const price = (product1.sizes && item.size) 
-            ? product1.sizes[item.size] || 0
-            : product1.price || 0;
-
         return {
-            productName: product1.name,
-            quantity: item.quantity,
-            size: item.size,
-            price: price,
+            productName: product1.name, quantity: item.quantity, size: item.size,
+            price: (product1.sizes && item.size) ? product1.sizes[item.size] || 0 : product1.price || 0,
         };
     }).filter((item): item is NonNullable<typeof item> => item !== null);
 
-
-    const total = orderItemsWithDetails.reduce((acc, item) => acc + (item!.price * item!.quantity), 0);
+    const total = orderItemsWithDetails.reduce((acc, item) => acc + (item.price * item.quantity), 0);
     const newOrderId = String(Math.max(0, ...orders.map(o => parseInt(o.id, 10))) + 1);
 
     const newOrder: Order = {
         id: newOrderId,
-        customerName: data.customerName,
-        customerPhone: data.customerPhone,
+        customerName: data.customerName, customerPhone: data.customerPhone,
         items: orderItemsWithDetails.map(({ productName, quantity, size }) => ({ productName, quantity, size })),
-        total,
-        status: 'Recebido',
+        total, status: 'Recebido',
         timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-        orderType: data.orderType,
-        address: data.address,
-        locationLink: data.locationLink,
-        notes: data.notes,
+        orderType: data.orderType, address: data.address, locationLink: data.locationLink, notes: data.notes,
     };
 
     saveOrders([newOrder, ...orders]);
     
-    toast({
-      title: "Pedido Criado com Sucesso!",
-      description: `O pedido para ${data.customerName} foi adicionado.`,
-    });
+    toast({ title: "Pedido Criado!", description: `O pedido para ${data.customerName} foi adicionado.` });
 
     addOrUpdateCustomer({
-        name: newOrder.customerName,
-        phone: newOrder.customerPhone || '',
-        address: newOrder.address,
-        locationLink: newOrder.locationLink,
-        orderTotal: newOrder.total,
+        name: newOrder.customerName, phone: newOrder.customerPhone || '',
+        address: newOrder.address, locationLink: newOrder.locationLink, orderTotal: newOrder.total,
     });
     
     addNotification({
         title: `Novo Pedido #${newOrderId}`,
         description: `Cliente: ${newOrder.customerName}, Total: ${total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`,
-        targetRoles: ['Administrador'],
-        link: '/pedidos'
+        targetRoles: ['Administrador'], link: '/pedidos'
     });
   };
   
   const updateOrder = (orderId: string, data: AddOrderFormValues) => {
-    const orderToUpdate = orders.find(o => o.id === orderId);
-    if (!orderToUpdate) {
-        toast({
-            variant: "destructive",
-            title: "Erro ao Atualizar",
-            description: `Pedido #${orderId} não encontrado.`,
-        });
+    if (!orders.find(o => o.id === orderId)) {
+        toast({ variant: "destructive", title: "Erro", description: `Pedido #${orderId} não encontrado.` });
         return;
     }
-
     const orderItemsWithDetails = data.items.map(item => {
-        const product1 = mockProducts.find(p => p.id === item.productId);
+        const product1 = products.find(p => p.id === item.productId);
         if (!product1) return null;
-
         if (item.isHalfHalf && item.size) {
-            const product2 = mockProducts.find(p => p.id === item.product2Id);
+            const product2 = products.find(p => p.id === item.product2Id);
             if (!product2) return null;
-
             const price1 = product1.sizes?.[item.size] ?? 0;
             const price2 = product2.sizes?.[item.size] ?? 0;
-            const finalPrice = Math.max(price1, price2);
-
             return {
                 productName: `Meio a Meio: ${product1.name} / ${product2.name}`,
-                quantity: item.quantity,
-                size: item.size,
-                price: finalPrice,
+                quantity: item.quantity, size: item.size, price: Math.max(price1, price2),
             };
         }
-        
-        const price = (product1.sizes && item.size) 
-            ? product1.sizes[item.size] || 0
-            : product1.price || 0;
-
         return {
-            productName: product1.name,
-            quantity: item.quantity,
-            size: item.size,
-            price: price,
+            productName: product1.name, quantity: item.quantity, size: item.size,
+            price: (product1.sizes && item.size) ? product1.sizes[item.size] || 0 : product1.price || 0,
         };
     }).filter((item): item is NonNullable<typeof item> => item !== null);
 
-    const total = orderItemsWithDetails.reduce((acc, item) => acc + (item!.price * item!.quantity), 0);
-
-    const updatedOrderData: Omit<Order, 'id' | 'status' | 'timestamp'> = {
-        customerName: data.customerName,
-        customerPhone: data.customerPhone,
+    const total = orderItemsWithDetails.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+    const updatedOrderData = {
+        customerName: data.customerName, customerPhone: data.customerPhone,
         items: orderItemsWithDetails.map(({ productName, quantity, size }) => ({ productName, quantity, size })),
-        total,
-        orderType: data.orderType,
-        address: data.address,
-        locationLink: data.locationLink,
-        notes: data.notes,
+        total, orderType: data.orderType, address: data.address,
+        locationLink: data.locationLink, notes: data.notes,
     };
-
-    const updatedOrders = orders.map(o => 
-        o.id === orderId 
-        ? { ...o, ...updatedOrderData } 
-        : o
-    );
-
-    saveOrders(updatedOrders);
-
-    toast({
-      title: "Pedido Atualizado!",
-      description: `O pedido #${orderId} foi atualizado com sucesso.`,
-    });
-
+    saveOrders(orders.map(o => o.id === orderId ? { ...o, ...updatedOrderData } : o));
+    toast({ title: "Pedido Atualizado!", description: `O pedido #${orderId} foi atualizado.` });
     addNotification({
-        title: `Pedido #${orderId} Atualizado`,
-        description: `O pedido de ${data.customerName} foi modificado.`,
-        targetRoles: ['Administrador', 'Funcionário'],
-        link: '/pedidos'
+        title: `Pedido #${orderId} Atualizado`, description: `O pedido de ${data.customerName} foi modificado.`,
+        targetRoles: ['Administrador', 'Funcionário'], link: '/pedidos'
     });
   };
 
   const cancelOrder = (orderId: string) => {
     const orderToCancel = orders.find(o => o.id === orderId);
     if (!orderToCancel || orderToCancel.status === 'Cancelado' || orderToCancel.status === 'Entregue') return;
-    
-    const updatedOrders = orders.map(o => o.id === orderId ? { ...o, status: 'Cancelado' } : o);
-    saveOrders(updatedOrders);
-
-    toast({
-        variant: "destructive",
-        title: "Pedido Cancelado!",
-        description: `O pedido #${orderId} foi cancelado.`,
-    });
-
+    saveOrders(orders.map(o => o.id === orderId ? { ...o, status: 'Cancelado' } : o));
+    toast({ variant: "destructive", title: "Pedido Cancelado!", description: `O pedido #${orderId} foi cancelado.` });
     addNotification({
-        title: 'Pedido Cancelado',
-        description: `O pedido #${orderId} de ${orderToCancel.customerName} foi cancelado.`,
-        targetRoles: ['Administrador', 'Funcionário'],
-        link: '/pedidos'
+        title: 'Pedido Cancelado', description: `O pedido #${orderId} de ${orderToCancel.customerName} foi cancelado.`,
+        targetRoles: ['Administrador', 'Funcionário'], link: '/pedidos'
     });
   };
 
   const deleteAllOrders = () => {
     if (currentUser?.role !== 'Administrador') {
-      toast({
-        variant: "destructive",
-        title: "Acesso Negado",
-        description: "Você não tem permissão para realizar esta ação.",
-      });
+      toast({ variant: "destructive", title: "Acesso Negado", description: "Sem permissão." });
       return;
     }
-
     saveOrders([]);
-
-    toast({
-      title: "Todos os Pedidos Apagados!",
-      description: "O histórico de pedidos foi completamente limpo.",
-    });
-
+    toast({ title: "Todos os Pedidos Apagados!", description: "O histórico de pedidos foi limpo." });
     if (currentUser) {
       addNotification({
           title: 'Histórico de Pedidos Limpo',
-          description: `O usuário ${currentUser.name} limpou todos os pedidos do sistema.`,
+          description: `O usuário ${currentUser.name} limpou todos os pedidos.`,
           targetRoles: ['Administrador'],
       });
     }
@@ -615,27 +564,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   return (
     <UserContext.Provider value={{ 
-      currentUser, 
-      users, 
-      customers, 
-      orders,
-      login, 
-      logout, 
-      isLoading, 
-      registerUser, 
-      updateUserStatus, 
-      updateUser, 
-      deleteUser, 
-      addOrUpdateCustomer,
-      notifications,
-      addNotification,
-      markNotificationAsRead,
-      markAllNotificationsAsRead,
-      advanceOrderStatus,
-      addOrder,
-      updateOrder,
-      cancelOrder,
-      deleteAllOrders,
+      currentUser, isLoading,
+      users, login, logout, registerUser, updateUserStatus, updateUser, deleteUser,
+      customers, addOrUpdateCustomer,
+      products, toggleProductAvailability, addProduct, updateProduct, deleteProduct,
+      notifications, addNotification, markNotificationAsRead, markAllNotificationsAsRead,
+      orders, advanceOrderStatus, addOrder, updateOrder, cancelOrder, deleteAllOrders,
     }}>
       {children}
     </UserContext.Provider>

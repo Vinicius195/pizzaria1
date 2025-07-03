@@ -16,7 +16,7 @@ import type { Order, OrderStatus } from '@/types';
 import { cn } from '@/lib/utils';
 import { Clock, User, Tag, ShoppingCart, DollarSign, Bike, Store, MapPin, Link as LinkIcon, MessageSquare, Phone } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { mockProducts } from '@/lib/mock-data';
+import { useUser } from '@/contexts/user-context';
 
 interface OrderDetailsDialogProps {
   order: Order | null;
@@ -56,6 +56,7 @@ const DetailRow = ({ icon: Icon, label, children }: { icon: LucideIcon; label: s
 );
 
 export function OrderDetailsDialog({ order, open, onOpenChange }: OrderDetailsDialogProps) {
+  const { products } = useUser();
   if (!order) return null;
 
   const getItemPrice = (itemName: string, itemSize?: string): number => {
@@ -63,13 +64,13 @@ export function OrderDetailsDialog({ order, open, onOpenChange }: OrderDetailsDi
     if (isHalfHalf) {
         const name1 = itemName.split('/')[0].replace('Meio a Meio:', '').trim();
         const name2 = itemName.split('/')[1].trim();
-        const product1 = mockProducts.find(p => p.name === name1);
-        const product2 = mockProducts.find(p => p.name === name2);
+        const product1 = products.find(p => p.name === name1);
+        const product2 = products.find(p => p.name === name2);
         if (product1 && product2 && itemSize && product1.sizes && product2.sizes) {
             return Math.max(product1.sizes[itemSize] || 0, product2.sizes[itemSize] || 0);
         }
     } else {
-        const product = mockProducts.find(p => p.name === itemName);
+        const product = products.find(p => p.name === itemName);
         if (product) {
             if (product.sizes && itemSize) {
                 return product.sizes[itemSize] || 0;
