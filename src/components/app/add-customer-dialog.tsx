@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -30,7 +31,7 @@ import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 
 const customerSchema = z.object({
   name: z.string().min(3, "O nome do cliente é obrigatório."),
-  phone: z.string().min(10, "O telefone é obrigatório."),
+  phone: z.string().min(10, "O telefone deve ter pelo menos 10 dígitos.").optional().or(z.literal('')),
   addressType: z.enum(['manual', 'link']).default('manual'),
   address: z.string().optional(),
   locationLink: z.string().url({ message: "Por favor, insira um link válido." }).optional().or(z.literal('')),
@@ -123,13 +124,13 @@ export function AddCustomerDialog({ open, onOpenChange, onSubmit, customer }: Ad
               name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Telefone</FormLabel>
+                  <FormLabel>Telefone (Opcional)</FormLabel>
                   <FormControl>
                     <div className="relative">
                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                           <Phone className="h-4 w-4 text-muted-foreground" />
                        </div>
-                       <Input type="tel" placeholder="(00) 90000-0000" className="pl-10" {...field} />
+                       <Input type="tel" placeholder="(00) 90000-0000" className="pl-10" {...field} value={field.value ?? ''} />
                     </div>
                   </FormControl>
                   <FormMessage />

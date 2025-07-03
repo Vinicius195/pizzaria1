@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -38,7 +39,7 @@ export default function ClientesPage() {
     await addOrUpdateCustomer({
       id: editingCustomer?.id, // Pass ID if editing
       name: data.name,
-      phone: data.phone,
+      phone: data.phone || undefined,
       address: data.addressType === 'manual' ? (data.address || undefined) : undefined,
       locationLink: data.addressType === 'link' ? (data.locationLink || undefined) : undefined,
     });
@@ -120,7 +121,7 @@ export default function ClientesPage() {
               {customers.map((customer) => (
                 <TableRow key={customer.id}>
                   <TableCell className="font-medium">{customer.name}</TableCell>
-                  <TableCell className="whitespace-nowrap">{customer.phone}</TableCell>
+                  <TableCell className="whitespace-nowrap">{customer.phone || 'Não informado'}</TableCell>
                    <TableCell className="hidden md:table-cell max-w-[250px]">
                     {customer.address ? (
                         <span className="truncate block" title={customer.address}>{customer.address}</span>
@@ -141,10 +142,10 @@ export default function ClientesPage() {
                   </TableCell>
                   <TableCell className="hidden sm:table-cell text-center">{customer.orderCount}</TableCell>
                   <TableCell className="hidden lg:table-cell whitespace-nowrap">
-                    {new Date(customer.lastOrderDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
+                    {customer.lastOrderDate ? new Date(customer.lastOrderDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : 'N/A'}
                   </TableCell>
                   <TableCell className="text-right whitespace-nowrap">
-                    {customer.totalSpent.toLocaleString('pt-BR', {
+                    {(customer.totalSpent || 0).toLocaleString('pt-BR', {
                       style: 'currency',
                       currency: 'BRL',
                     })}

@@ -13,7 +13,6 @@ import type {
   PizzaSettings,
   UserRole,
   UserStatus,
-  PizzaSize,
 } from '@/types';
 import type { AddOrderFormValues } from '@/components/app/add-order-dialog';
 import type { ProductFormValues } from '@/components/app/add-product-dialog';
@@ -361,22 +360,53 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const formattedItems = formatOrderItems(data.items);
     
     const newOrder: TablesInsert<'orders'> = {
-      ...data,
-      total,
+      customerName: data.customerName,
+      customerPhone: data.customerPhone || null,
+      orderType: data.orderType,
       items: formattedItems as any,
+      address: data.address || null,
+      locationLink: data.locationLink || null,
+      notes: data.notes || null,
+      total,
       status: 'Recebido',
       timestamp: format(new Date(), 'HH:mm'),
     };
     
     const { error } = await supabase.from('orders').insert(newOrder);
-    if (error) console.error("Error adding order:", error);
-    else {
+    
+    if (!error) {
+      // After successfully adding order, update or create customer
+      const { data: existingCustomer } = await supabase.from('customers').select('*').eq('name', data.customerName).single();
+
+      if (existingCustomer) {
+        const { error: updateError } = await supabase.from('customers').update({
+            orderCount: (existingCustomer.orderCount || 0) + 1,
+            totalSpent: (existingCustomer.totalSpent || 0) + total,
+            lastOrderDate: new Date().toISOString().split('T')[0],
+            phone: data.customerPhone || existingCustomer.phone, // Update phone if provided
+        }).eq('id', existingCustomer.id);
+        if (updateError) console.error("Error updating customer stats:", updateError);
+      } else {
+        const { error: insertError } = await supabase.from('customers').insert({
+            name: data.customerName,
+            phone: data.customerPhone || null,
+            address: data.address || null,
+            locationLink: data.locationLink || null,
+            orderCount: 1,
+            totalSpent: total,
+            lastOrderDate: new Date().toISOString().split('T')[0],
+        });
+        if (insertError) console.error("Error creating new customer from order:", insertError);
+      }
+      
       await createNotification({
         title: 'Novo Pedido!',
         description: `Pedido de ${data.customerName} no valor de R$ ${total.toFixed(2)} foi recebido.`,
         targetRoles: ['Administrador', 'Funcionário'],
         link: '/pedidos'
       });
+    } else {
+      console.error("Error adding order:", error);
     }
   };
 
@@ -492,18 +522,24 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   // --- Customer Functions ---
   const addOrUpdateCustomer = async (data: Partial<Customer>) => {
-    const customerData = {
-        name: data.name!,
-        phone: data.phone!,
-        address: data.address || null,
-        locationLink: data.locationLink || null,
-        // These would be updated via triggers or functions in a real scenario
-        lastOrderDate: new Date().toISOString().split('T')[0],
-        totalSpent: data.id ? data.totalSpent : 0,
-        orderCount: data.id ? data.orderCount : 0,
-    };
-    const { error } = await supabase.from('customers').upsert({ id: data.id, ...customerData });
-    if (error) console.error("Error adding/updating customer:", error);
+    if (data.id) { // Update existing customer
+        const { error } = await supabase.from('customers').update({
+            name: data.name,
+            phone: data.phone ?? null,
+            address: data.address ?? null,
+            locationLink: data.locationLink ?? null,
+        }).eq('id', data.id);
+        if (error) console.error("Error updating customer:", error);
+    } else { // Add new customer, created via the customer page
+        const { error } = await supabase.from('customers').insert({
+            name: data.name!,
+            phone: data.phone ?? null,
+            address: data.address ?? null,
+            locationLink: data.locationLink ?? null,
+            // lastOrderDate, totalSpent, orderCount have defaults in DB or will be populated by first order
+        });
+        if (error) console.error("Error adding customer:", error);
+    }
   };
   
   const deleteCustomer = async (customerId: string) => {
