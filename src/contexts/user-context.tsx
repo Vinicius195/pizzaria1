@@ -49,6 +49,7 @@ interface UserContextType {
   // Customers
   customers: Customer[];
   addOrUpdateCustomer: (data: CustomerData) => void;
+  deleteCustomer: (customerId: string) => void;
   // Products
   products: Product[];
   toggleProductAvailability: (productId: string, isAvailable: boolean) => void;
@@ -281,6 +282,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
         return updatedCustomers;
     });
   };
+
+  const deleteCustomer = (customerId: string) => {
+    saveCustomers(customers.filter(c => c.id !== customerId));
+  };
+
 
   // --- Product Management ---
   const toggleProductAvailability = (productId: string, isAvailable: boolean) => {
@@ -566,7 +572,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     <UserContext.Provider value={{ 
       currentUser, isLoading,
       users, login, logout, registerUser, updateUserStatus, updateUser, deleteUser,
-      customers, addOrUpdateCustomer,
+      customers, addOrUpdateCustomer, deleteCustomer,
       products, toggleProductAvailability, addProduct, updateProduct, deleteProduct,
       notifications, addNotification, markNotificationAsRead, markAllNotificationsAsRead,
       orders, advanceOrderStatus, addOrder, updateOrder, cancelOrder, deleteAllOrders,

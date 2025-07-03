@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useState } from 'react';
+import React, { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   Card,
@@ -184,12 +184,19 @@ function PedidosPageContent() {
 
   const isMobile = useIsMobile();
   const statusFilter = searchParams.get('status');
+  const customerFilter = searchParams.get('cliente');
   
   const [isOrderDialogOpen, setIsOrderDialogOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(customerFilter || '');
   const [isClearAllDialogOpen, setIsClearAllDialogOpen] = useState(false);
+
+  useEffect(() => {
+    if (customerFilter) {
+      setSearchQuery(customerFilter);
+    }
+  }, [customerFilter]);
   
   const allTabs = ['Todos', ...orderStatuses];
   const defaultValue = statusFilter && allTabs.includes(statusFilter) ? statusFilter : 'Todos';

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Table,
   TableBody,
@@ -9,21 +10,24 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import type { Customer } from '@/types';
-import { MoreHorizontal, PlusCircle, Link as LinkIcon, ExternalLink } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { MoreHorizontal, PlusCircle, Link as LinkIcon, ExternalLink, History, Trash2, Edit } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { AddCustomerDialog, type CustomerFormValues } from '@/components/app/add-customer-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/user-context';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 
 export default function ClientesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [deletingCustomer, setDeletingCustomer] = useState<Customer | null>(null);
+  const router = useRouter();
   const { toast } = useToast();
-  const { customers, addOrUpdateCustomer } = useUser();
+  const { customers, addOrUpdateCustomer, deleteCustomer } = useUser();
 
   const handleOpenDialog = (customer: Customer | null = null) => {
     setEditingCustomer(customer);
@@ -45,6 +49,21 @@ export default function ClientesPage() {
     });
   };
 
+  const handleViewHistory = (customerName: string) => {
+    router.push(`/pedidos?cliente=${encodeURIComponent(customerName)}`);
+  };
+
+  const handleDelete = () => {
+    if (!deletingCustomer) return;
+    deleteCustomer(deletingCustomer.id);
+    toast({
+      variant: 'destructive',
+      title: 'Cliente Excluído!',
+      description: `O cliente ${deletingCustomer.name} foi removido.`,
+    });
+    setDeletingCustomer(null);
+  };
+
   return (
     <>
       <AddCustomerDialog
@@ -53,6 +72,22 @@ export default function ClientesPage() {
         onSubmit={handleSubmit}
         customer={editingCustomer}
       />
+
+       <AlertDialog open={!!deletingCustomer} onOpenChange={setDeletingCustomer}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Essa ação não pode ser desfeita. Isso irá deletar permanentemente o cadastro de <span className="font-bold">"{deletingCustomer?.name}"</span>. Os pedidos associados não serão apagados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className={buttonVariants({ variant: "destructive" })}>Deletar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Card className="shadow-lg">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
@@ -124,9 +159,21 @@ export default function ClientesPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                        <DropdownMenuItem>Ver Histórico</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleViewHistory(customer.name)}>
+                           <History className="mr-2 h-4 w-4" />
+                           Ver Histórico
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleOpenDialog(customer)}>
+                          <Edit className="mr-2 h-4 w-4" />
                           Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive focus:bg-destructive focus:text-destructive-foreground"
+                          onClick={() => setDeletingCustomer(customer)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Deletar
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
