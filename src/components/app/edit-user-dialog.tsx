@@ -65,9 +65,13 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
       name: data.name,
       email: fullEmail,
       role: data.role as UserRole,
-      password: data.password, // Pass it, context will handle if it's empty
     };
     
+    // Only include password in payload if it's not empty
+    if (data.password && data.password.trim() !== '') {
+        payload.password = data.password;
+    }
+
     const result = updateUser(user.key, payload);
     
     toast({
