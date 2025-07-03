@@ -64,7 +64,7 @@ const assistantFlow = ai.defineFlow({
 
     const llmResponse = await ai.generate({
         prompt,
-        model: 'googleai/gemini-2.0-flash',
+        model: 'googleai/gemini-pro',
         tools: [getOrderInfo, getCustomerInfo],
     });
 
