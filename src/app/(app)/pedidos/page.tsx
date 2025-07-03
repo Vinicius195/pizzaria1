@@ -227,37 +227,55 @@ function PedidosPageContent() {
       });
 
       // Notifications
-      addNotification({
-        title: `Pedido #${orderId} Atualizado`,
-        description: `Status: ${originalOrder.status} -> ${nextStatus}`,
-        targetRoles: ['Administrador', 'Funcionário'],
-        link: '/pedidos'
-      });
+      let notificationData = null;
 
-      if (nextStatus === 'Pronto') {
-        if (originalOrder.orderType === 'entrega') {
-          addNotification({
-            title: 'Pedido Pronto para Entrega!',
-            description: `O pedido #${orderId} de ${originalOrder.customerName} está pronto.`,
-            targetRoles: ['Funcionário'],
-            link: '/entregas'
-          });
-        } else {
-           addNotification({
-            title: 'Pedido Pronto para Retirada!',
-            description: `O pedido #${orderId} de ${originalOrder.customerName} está pronto.`,
-            targetRoles: ['Funcionário'],
+      switch (nextStatus) {
+        case 'Preparando':
+            notificationData = {
+                title: `Pedido #${orderId} em Preparo`,
+                description: `O pedido de ${originalOrder.customerName} começou a ser preparado.`,
+                targetRoles: ['Administrador', 'Funcionário'],
+                link: '/pedidos'
+            };
+            break;
+        case 'Pronto':
+          if (originalOrder.orderType === 'entrega') {
+            notificationData = {
+              title: 'Pedido Pronto para Entrega!',
+              description: `O pedido #${orderId} de ${originalOrder.customerName} está pronto e aguardando o entregador.`,
+              targetRoles: ['Funcionário'],
+              link: '/entregas'
+            };
+          } else {
+             notificationData = {
+              title: 'Pedido Pronto para Retirada!',
+              description: `O pedido #${orderId} de ${originalOrder.customerName} está pronto para ser retirado pelo cliente.`,
+              targetRoles: ['Funcionário'],
+              link: '/pedidos'
+            };
+          }
+          break;
+        case 'Em Entrega':
+            notificationData = {
+                title: `Pedido #${orderId} em Rota`,
+                description: `O pedido de ${originalOrder.customerName} saiu para entrega.`,
+                targetRoles: ['Administrador'],
+                link: '/entregas'
+            };
+            break;
+        case 'Entregue':
+          // This case on the pedidos page is for 'retirada' orders.
+          notificationData = {
+            title: 'Pedido Entregue',
+            description: `O pedido #${orderId} de ${originalOrder.customerName} foi entregue ao cliente.`,
+            targetRoles: ['Administrador'],
             link: '/pedidos'
-          });
-        }
+          };
+          break;
       }
-      if (nextStatus === 'Entregue') {
-        addNotification({
-          title: 'Pedido Entregue',
-          description: `O pedido #${orderId} foi marcado como entregue.`,
-          targetRoles: ['Administrador'],
-          link: '/pedidos'
-        });
+      
+      if (notificationData) {
+        addNotification(notificationData);
       }
     }
   };
