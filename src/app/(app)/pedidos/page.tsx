@@ -11,10 +11,10 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { orderStatuses, mockProducts } from '@/lib/mock-data';
 import type { Order, OrderStatus } from '@/types';
-import { Clock, PlusCircle, Bike, MoreHorizontal, Search, MessageSquare, ChefHat, Pizza as PizzaIcon, Package } from 'lucide-react';
+import { Clock, PlusCircle, Bike, MoreHorizontal, Search, MessageSquare, ChefHat, Pizza as PizzaIcon, Package, Trash2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AddOrderDialog, type AddOrderFormValues } from '@/components/app/add-order-dialog';
 import { OrderDetailsDialog } from '@/components/app/order-details-dialog';
@@ -36,6 +36,7 @@ import { useUser } from '@/contexts/user-context';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 function OrderCard({ 
   order, 
@@ -167,7 +168,8 @@ function PedidosPageContent() {
     orders, 
     advanceOrderStatus, 
     addOrder, 
-    cancelOrder 
+    cancelOrder,
+    deleteAllOrders,
   } = useUser();
 
   const isMobile = useIsMobile();
@@ -176,6 +178,7 @@ function PedidosPageContent() {
   const [isAddOrderDialogOpen, setIsAddOrderDialogOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isClearAllDialogOpen, setIsClearAllDialogOpen] = useState(false);
   
   const allTabs = ['Todos', ...orderStatuses];
   const defaultValue = statusFilter && allTabs.includes(statusFilter) ? statusFilter : 'Todos';
@@ -187,6 +190,11 @@ function PedidosPageContent() {
 
   const handleViewDetails = (order: Order) => {
     setSelectedOrder(order);
+  };
+  
+  const handleClearAllOrders = () => {
+    deleteAllOrders();
+    setIsClearAllDialogOpen(false);
   };
 
   const filteredOrders = orders.filter(order =>
@@ -245,6 +253,23 @@ function PedidosPageContent() {
         onOpenChange={() => setSelectedOrder(null)}
       />
 
+      <AlertDialog open={isClearAllDialogOpen} onOpenChange={setIsClearAllDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Você tem certeza absoluta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Essa ação não pode ser desfeita. Isso irá deletar permanentemente <strong>todos</strong> os pedidos do sistema.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleClearAllOrders} className={buttonVariants({ variant: "destructive" })}>
+              Sim, apagar tudo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <h1 className="text-3xl font-bold font-headline">Pedidos</h1>
         <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -261,12 +286,18 @@ function PedidosPageContent() {
             <PlusCircle className="mr-2 h-4 w-4" />
             Adicionar Pedido
           </Button>
+          {isManager && (
+            <Button variant="destructive" onClick={() => setIsClearAllDialogOpen(true)}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              Limpar Pedidos
+            </Button>
+          )}
         </div>
       </div>
       
       {isManager ? (
         <Tabs defaultValue={defaultValue} className="w-full">
-            <TabsList className="h-auto flex-wrap gap-1">
+            <TabsList className="h-auto flex-wrap justify-start gap-1">
                 <TabsTrigger value="Todos" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">Todos</TabsTrigger>
                 {orderStatuses.map(status => (
                     <TabsTrigger key={status} value={status} className={cn('font-semibold', getStatusTabClasses(status))}>{status}</TabsTrigger>

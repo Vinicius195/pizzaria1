@@ -54,6 +54,7 @@ interface UserContextType {
   advanceOrderStatus: (orderId: string) => void;
   addOrder: (data: AddOrderFormValues) => void;
   cancelOrder: (orderId: string) => void;
+  deleteAllOrders: () => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -343,12 +344,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     if (!isActionable) return;
 
+    // Special logic for 'Pronto' state based on order type
     if (originalOrder.status === 'Pronto') {
         nextStatus = originalOrder.orderType === 'retirada' ? 'Entregue' : 'Em Entrega';
     } else {
         const nextStatusIndex = currentStatusIndex + 1;
         if (nextStatusIndex < orderStatuses.length) {
             const potentialNextStatus = orderStatuses[nextStatusIndex];
+            // Skip 'Cancelado' in the normal flow
             if (potentialNextStatus !== 'Cancelado') {
                 nextStatus = potentialNextStatus;
             }
@@ -506,6 +509,32 @@ export function UserProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const deleteAllOrders = () => {
+    if (currentUser?.role !== 'Administrador') {
+      toast({
+        variant: "destructive",
+        title: "Acesso Negado",
+        description: "Você não tem permissão para realizar esta ação.",
+      });
+      return;
+    }
+
+    saveOrders([]);
+
+    toast({
+      title: "Todos os Pedidos Apagados!",
+      description: "O histórico de pedidos foi completamente limpo.",
+    });
+
+    if (currentUser) {
+      addNotification({
+          title: 'Histórico de Pedidos Limpo',
+          description: `O usuário ${currentUser.name} limpou todos os pedidos do sistema.`,
+          targetRoles: ['Administrador'],
+      });
+    }
+  };
+
   return (
     <UserContext.Provider value={{ 
       currentUser, 
@@ -527,6 +556,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       advanceOrderStatus,
       addOrder,
       cancelOrder,
+      deleteAllOrders,
     }}>
       {children}
     </UserContext.Provider>
