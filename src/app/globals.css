@@ -7,6 +7,15 @@ body {
 }
 
 @layer base {
+  html {
+    font-size: 17px;
+  }
+  @screen md {
+    html {
+      font-size: 16px;
+    }
+  }
+
   :root {
     --background: 27 100% 95%;
     --foreground: 25 50% 15%;
@@ -54,7 +63,7 @@ body {
     --secondary: 220 20% 15%;
     --secondary-foreground: 220 20% 95%;
     --muted: 220 20% 15%;
-    --muted-foreground: 220 20% 75%;
+    --muted-foreground: 220 20% 85%;
     --accent: 16 100% 50%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 62.8% 50.6%;
