@@ -1,22 +1,18 @@
 'use client';
 
-import React, { useState } from 'react';
-import { mockOrders } from '@/lib/mock-data';
+import React from 'react';
 import type { Order, OrderStatus } from '@/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Bike, Check, MapPin, Phone, Link as LinkIcon, ExternalLink } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/contexts/user-context';
 
 
 export default function EntregasPage() {
-    const { toast } = useToast();
-    const [orders, setOrders] = useState<Order[]>(mockOrders);
-    const { addNotification } = useUser();
+    const { orders, advanceOrderStatus } = useUser();
 
     const deliveryOrders = orders.filter(
         order => order.orderType === 'entrega' && ['Pronto', 'Em Entrega', 'Entregue'].includes(order.status)
@@ -27,51 +23,6 @@ export default function EntregasPage() {
         if (aIndex !== bIndex) return aIndex - bIndex;
         return parseInt(b.id, 10) - parseInt(a.id, 10);
     });
-
-    const handleAdvanceStatus = (orderId: string) => {
-        let nextStatus: OrderStatus | undefined;
-        let originalOrder: Order | undefined;
-
-        setOrders(prevOrders =>
-            prevOrders.map(order => {
-                if (order.id !== orderId) return order;
-                originalOrder = order;
-
-                if (order.status === 'Pronto') {
-                    nextStatus = 'Em Entrega';
-                    return { ...order, status: nextStatus };
-                }
-                if (order.status === 'Em Entrega') {
-                    nextStatus = 'Entregue';
-                    return { ...order, status: nextStatus };
-                }
-                return order;
-            })
-        );
-        
-        if (nextStatus && originalOrder) {
-            toast({
-                title: "Status do Pedido Atualizado!",
-                description: `O pedido #${orderId} agora está: ${nextStatus}.`,
-            });
-            
-            if (nextStatus === 'Em Entrega') {
-              addNotification({
-                title: `Pedido #${orderId} em Rota`,
-                description: `O pedido de ${originalOrder.customerName} saiu para entrega.`,
-                targetRoles: ['Administrador'],
-                link: '/entregas'
-              });
-            } else if (nextStatus === 'Entregue') {
-               addNotification({
-                title: 'Pedido Entregue',
-                description: `O pedido #${orderId} de ${originalOrder.customerName} foi entregue.`,
-                targetRoles: ['Administrador'],
-                link: '/entregas'
-              });
-            }
-        }
-    };
     
     const getStatusBadgeClasses = (status: OrderStatus): string => {
         switch (status) {
@@ -163,7 +114,7 @@ export default function EntregasPage() {
                                         Pedido Entregue
                                     </Button>
                                 ) : (
-                                    <Button className="w-full" onClick={() => handleAdvanceStatus(order.id)}>
+                                    <Button className="w-full" onClick={() => advanceOrderStatus(order.id)}>
                                         {order.status === 'Pronto' ? (
                                             <>
                                                 <Bike className="mr-2 h-4 w-4" />

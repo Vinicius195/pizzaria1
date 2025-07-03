@@ -12,13 +12,12 @@ import {
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { mockOrders, orderStatuses, mockProducts } from '@/lib/mock-data';
+import { orderStatuses, mockProducts } from '@/lib/mock-data';
 import type { Order, OrderStatus } from '@/types';
 import { Clock, PlusCircle, Bike, MoreHorizontal, Search, MessageSquare, ChefHat, Pizza as PizzaIcon, Package } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AddOrderDialog, type AddOrderFormValues } from '@/components/app/add-order-dialog';
 import { OrderDetailsDialog } from '@/components/app/order-details-dialog';
-import { useToast } from '@/hooks/use-toast';
 import {
   Tooltip,
   TooltipContent,
@@ -163,15 +162,18 @@ const kanbanStatuses: { status: OrderStatus, icon: React.ElementType, color: str
 
 function PedidosPageContent() {
   const searchParams = useSearchParams();
-  const { toast } = useToast();
-  const { currentUser, addOrUpdateCustomer, addNotification } = useUser();
+  const { 
+    currentUser, 
+    orders, 
+    advanceOrderStatus, 
+    addOrder, 
+    cancelOrder 
+  } = useUser();
+
   const isMobile = useIsMobile();
   const statusFilter = searchParams.get('status');
   
   const [isAddOrderDialogOpen, setIsAddOrderDialogOpen] = useState(false);
-  const [orders, setOrders] = useState<Order[]>(() => 
-    mockOrders.slice().sort((a, b) => parseInt(a.id, 10) - parseInt(b.id, 10))
-  );
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -183,199 +185,8 @@ function PedidosPageContent() {
   }
   const isManager = currentUser.role === 'Administrador';
 
-  const handleAdvanceStatus = (orderId: string) => {
-    let nextStatus: OrderStatus | undefined;
-    let originalOrder: Order | undefined;
-
-    setOrders(prevOrders =>
-      prevOrders.map(order => {
-        if (order.id !== orderId) return order;
-        originalOrder = order;
-
-        const currentStatusIndex = orderStatuses.indexOf(order.status);
-        const isActionable = order.status !== 'Entregue' && order.status !== 'Cancelado' && currentStatusIndex !== -1;
-
-        if (!isActionable) return order;
-
-        if (order.status === 'Pronto' && order.orderType === 'retirada') {
-          nextStatus = 'Entregue';
-          return { ...order, status: 'Entregue' };
-        }
-        
-        if (order.status === 'Pronto' && order.orderType === 'entrega') {
-          nextStatus = 'Em Entrega';
-          return { ...order, status: 'Em Entrega' };
-        }
-
-        const nextStatusIndex = currentStatusIndex + 1;
-        if (nextStatusIndex < orderStatuses.length) {
-          const potentialNextStatus = orderStatuses[nextStatusIndex];
-          if (potentialNextStatus !== 'Cancelado') {
-            nextStatus = potentialNextStatus;
-            return { ...order, status: nextStatus };
-          }
-        }
-
-        return order;
-      })
-    );
-
-    if (nextStatus && originalOrder) {
-      toast({
-        title: "Status do Pedido Atualizado!",
-        description: `O pedido #${orderId} agora está: ${nextStatus}.`,
-      });
-
-      // Notifications
-      let notificationData = null;
-
-      switch (nextStatus) {
-        case 'Preparando':
-            notificationData = {
-                title: `Pedido #${orderId} em Preparo`,
-                description: `O pedido de ${originalOrder.customerName} começou a ser preparado.`,
-                targetRoles: ['Administrador', 'Funcionário'],
-                link: '/pedidos'
-            };
-            break;
-        case 'Pronto':
-          if (originalOrder.orderType === 'entrega') {
-            notificationData = {
-              title: 'Pedido Pronto para Entrega!',
-              description: `O pedido #${orderId} de ${originalOrder.customerName} está pronto e aguardando o entregador.`,
-              targetRoles: ['Funcionário'],
-              link: '/entregas'
-            };
-          } else {
-             notificationData = {
-              title: 'Pedido Pronto para Retirada!',
-              description: `O pedido #${orderId} de ${originalOrder.customerName} está pronto para ser retirado pelo cliente.`,
-              targetRoles: ['Funcionário'],
-              link: '/pedidos'
-            };
-          }
-          break;
-        case 'Em Entrega':
-            notificationData = {
-                title: `Pedido #${orderId} em Rota`,
-                description: `O pedido de ${originalOrder.customerName} saiu para entrega.`,
-                targetRoles: ['Administrador'],
-                link: '/entregas'
-            };
-            break;
-        case 'Entregue':
-          // This case on the pedidos page is for 'retirada' orders.
-          notificationData = {
-            title: 'Pedido Entregue',
-            description: `O pedido #${orderId} de ${originalOrder.customerName} foi entregue ao cliente.`,
-            targetRoles: ['Administrador'],
-            link: '/pedidos'
-          };
-          break;
-      }
-      
-      if (notificationData) {
-        addNotification(notificationData);
-      }
-    }
-  };
-
-  const handleCancelOrder = (orderId: string) => {
-    const orderToCancel = orders.find(o => o.id === orderId);
-    if (!orderToCancel) return;
-
-    setOrders(prevOrders =>
-      prevOrders.map(order =>
-        order.id === orderId ? { ...order, status: 'Cancelado' } : order
-      )
-    );
-    toast({
-      variant: "destructive",
-      title: "Pedido Cancelado!",
-      description: `O pedido #${orderId} foi cancelado.`,
-    });
-
-    addNotification({
-        title: 'Pedido Cancelado',
-        description: `O pedido #${orderId} de ${orderToCancel.customerName} foi cancelado.`,
-        targetRoles: ['Administrador', 'Funcionário'],
-        link: '/pedidos'
-    });
-  };
-
   const handleViewDetails = (order: Order) => {
     setSelectedOrder(order);
-  };
-
-  const handleAddOrder = (data: AddOrderFormValues) => {
-    const orderItemsWithDetails = data.items.map(item => {
-        const product1 = mockProducts.find(p => p.id === item.productId);
-        if (!product1) return null;
-
-        if (item.isHalfHalf && item.size) {
-            const product2 = mockProducts.find(p => p.id === item.product2Id);
-            if (!product2) return null;
-
-            const price1 = product1.sizes?.[item.size] ?? 0;
-            const price2 = product2.sizes?.[item.size] ?? 0;
-            const finalPrice = Math.max(price1, price2);
-
-            return {
-                productName: `Meio a Meio: ${product1.name} / ${product2.name}`,
-                quantity: item.quantity,
-                size: item.size,
-                price: finalPrice,
-            };
-        }
-        
-        const price = (product1.sizes && item.size) 
-            ? product1.sizes[item.size] || 0
-            : product1.price || 0;
-
-        return {
-            productName: product1.name,
-            quantity: item.quantity,
-            size: item.size,
-            price: price,
-        };
-    }).filter((item): item is NonNullable<typeof item> => item !== null);
-
-
-    const total = orderItemsWithDetails.reduce((acc, item) => acc + (item!.price * item!.quantity), 0);
-    const newOrderId = String(Math.max(0, ...orders.map(o => parseInt(o.id, 10))) + 1);
-
-    const newOrder: Order = {
-        id: newOrderId,
-        customerName: data.customerName,
-        customerPhone: data.customerPhone,
-        items: orderItemsWithDetails.map(({ productName, quantity, size }) => ({ productName, quantity, size })),
-        total,
-        status: 'Recebido',
-        timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-        orderType: data.orderType,
-        address: data.address,
-        locationLink: data.locationLink,
-        notes: data.notes,
-    };
-
-    setOrders(prevOrders => [newOrder, ...prevOrders]);
-
-    // Integrate with customer data
-    addOrUpdateCustomer({
-        name: newOrder.customerName,
-        phone: newOrder.customerPhone || '',
-        address: newOrder.address,
-        locationLink: newOrder.locationLink,
-        orderTotal: newOrder.total,
-    });
-    
-    // Add notification for admin
-    addNotification({
-        title: `Novo Pedido #${newOrderId}`,
-        description: `Cliente: ${newOrder.customerName}, Total: ${total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`,
-        targetRoles: ['Administrador'],
-        link: '/pedidos'
-    });
   };
 
   const filteredOrders = orders.filter(order =>
@@ -407,7 +218,7 @@ function PedidosPageContent() {
       <AddOrderDialog 
         open={isAddOrderDialogOpen} 
         onOpenChange={setIsAddOrderDialogOpen}
-        onAddOrder={handleAddOrder}
+        onAddOrder={addOrder}
       />
       <OrderDetailsDialog 
         order={selectedOrder}
@@ -447,9 +258,9 @@ function PedidosPageContent() {
                 <OrderCard 
                 key={order.id} 
                 order={order} 
-                onAdvanceStatus={handleAdvanceStatus} 
+                onAdvanceStatus={advanceOrderStatus} 
                 onViewDetails={handleViewDetails}
-                onCancelOrder={handleCancelOrder}
+                onCancelOrder={cancelOrder}
                 />
             ))}
             </TabsContent>
@@ -459,9 +270,9 @@ function PedidosPageContent() {
                 <OrderCard 
                     key={order.id} 
                     order={order} 
-                    onAdvanceStatus={handleAdvanceStatus} 
+                    onAdvanceStatus={advanceOrderStatus} 
                     onViewDetails={handleViewDetails}
-                    onCancelOrder={handleCancelOrder}
+                    onCancelOrder={cancelOrder}
                 />
                 ))}
             </TabsContent>
@@ -501,9 +312,9 @@ function PedidosPageContent() {
                       <OrderCard
                         key={order.id}
                         order={order}
-                        onAdvanceStatus={handleAdvanceStatus}
+                        onAdvanceStatus={advanceOrderStatus}
                         onViewDetails={handleViewDetails}
-                        onCancelOrder={handleCancelOrder}
+                        onCancelOrder={cancelOrder}
                       />
                     ))
                   ) : (
@@ -534,9 +345,9 @@ function PedidosPageContent() {
                                       <OrderCard
                                           key={order.id}
                                           order={order}
-                                          onAdvanceStatus={handleAdvanceStatus}
+                                          onAdvanceStatus={advanceOrderStatus}
                                           onViewDetails={handleViewDetails}
-                                          onCancelOrder={handleCancelOrder}
+                                          onCancelOrder={cancelOrder}
                                       />
                                   ))
                               ) : (

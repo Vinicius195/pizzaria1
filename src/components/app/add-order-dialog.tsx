@@ -30,7 +30,7 @@ import type { Product, PizzaSize } from '@/types';
 import { Check, ChevronsUpDown, Link, Phone, PlusCircle, Trash2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -151,7 +151,6 @@ interface AddOrderDialogProps {
 }
 
 export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialogProps) {
-  const { toast } = useToast();
   const [openProductCombobox, setOpenProductCombobox] = useState<number | null>(null);
   const [openProduct2Combobox, setOpenProduct2Combobox] = useState<number | null>(null);
   const { currentUser } = useUser();
@@ -203,10 +202,6 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
 
   function onSubmit(data: AddOrderFormValues) {
     onAddOrder(data);
-    toast({
-      title: "Pedido Criado com Sucesso!",
-      description: `O pedido para ${data.customerName} foi adicionado.`,
-    })
     handleClose();
   }
 
