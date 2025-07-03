@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -32,7 +33,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { getMockSettings } from '@/lib/settings-data';
 import { Switch } from '../ui/switch';
 import { useUser } from '@/contexts/user-context';
 
@@ -102,7 +102,7 @@ interface AddOrderDialogProps {
 export function AddOrderDialog({ open, onOpenChange, onSubmit, order }: AddOrderDialogProps) {
   const [openProductCombobox, setOpenProductCombobox] = useState<number | null>(null);
   const [openProduct2Combobox, setOpenProduct2Combobox] = useState<number | null>(null);
-  const { currentUser, products: allProducts } = useUser();
+  const { currentUser, products: allProducts, settings } = useUser();
   const isManager = currentUser?.role === 'Administrador';
   const isEditMode = !!order;
 
@@ -579,7 +579,7 @@ export function AddOrderDialog({ open, onOpenChange, onSubmit, order }: AddOrder
                                     >
                                         {Object.keys(selectedProduct.sizes!)
                                             .filter(
-                                                (size) => selectedProduct.category !== 'Pizza' || getMockSettings().sizeAvailability[size as PizzaSize]
+                                                (size) => selectedProduct.category !== 'Pizza' || (settings && (settings.sizeAvailability as any)[size as PizzaSize])
                                             )
                                             .map((size) => (
                                             <FormItem key={size} className="flex items-center space-x-2 space-y-0">
@@ -649,3 +649,5 @@ export function AddOrderDialog({ open, onOpenChange, onSubmit, order }: AddOrder
     </Dialog>
   );
 }
+
+    
