@@ -54,3 +54,13 @@ export interface UserProfile {
   avatar: string;
   fallback: string;
 }
+
+export interface Notification {
+  id: string;
+  title: string;
+  description: string;
+  timestamp: string; // ISO string
+  isRead: boolean;
+  targetRoles: UserRole[];
+  link?: string;
+}

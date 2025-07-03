@@ -164,7 +164,7 @@ const kanbanStatuses: { status: OrderStatus, icon: React.ElementType, color: str
 function PedidosPageContent() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  const { currentUser, addOrUpdateCustomer } = useUser();
+  const { currentUser, addOrUpdateCustomer, addNotification } = useUser();
   const isMobile = useIsMobile();
   const statusFilter = searchParams.get('status');
   
@@ -185,10 +185,12 @@ function PedidosPageContent() {
 
   const handleAdvanceStatus = (orderId: string) => {
     let nextStatus: OrderStatus | undefined;
+    let originalOrder: Order | undefined;
 
     setOrders(prevOrders =>
       prevOrders.map(order => {
         if (order.id !== orderId) return order;
+        originalOrder = order;
 
         const currentStatusIndex = orderStatuses.indexOf(order.status);
         const isActionable = order.status !== 'Entregue' && order.status !== 'Cancelado' && currentStatusIndex !== -1;
@@ -218,15 +220,52 @@ function PedidosPageContent() {
       })
     );
 
-    if (nextStatus) {
+    if (nextStatus && originalOrder) {
       toast({
         title: "Status do Pedido Atualizado!",
         description: `O pedido #${orderId} agora está: ${nextStatus}.`,
       });
+
+      // Notifications
+      addNotification({
+        title: `Pedido #${orderId} Atualizado`,
+        description: `Status: ${originalOrder.status} -> ${nextStatus}`,
+        targetRoles: ['Administrador', 'Funcionário'],
+        link: '/pedidos'
+      });
+
+      if (nextStatus === 'Pronto') {
+        if (originalOrder.orderType === 'entrega') {
+          addNotification({
+            title: 'Pedido Pronto para Entrega!',
+            description: `O pedido #${orderId} de ${originalOrder.customerName} está pronto.`,
+            targetRoles: ['Funcionário'],
+            link: '/entregas'
+          });
+        } else {
+           addNotification({
+            title: 'Pedido Pronto para Retirada!',
+            description: `O pedido #${orderId} de ${originalOrder.customerName} está pronto.`,
+            targetRoles: ['Funcionário'],
+            link: '/pedidos'
+          });
+        }
+      }
+      if (nextStatus === 'Entregue') {
+        addNotification({
+          title: 'Pedido Entregue',
+          description: `O pedido #${orderId} foi marcado como entregue.`,
+          targetRoles: ['Administrador'],
+          link: '/pedidos'
+        });
+      }
     }
   };
 
   const handleCancelOrder = (orderId: string) => {
+    const orderToCancel = orders.find(o => o.id === orderId);
+    if (!orderToCancel) return;
+
     setOrders(prevOrders =>
       prevOrders.map(order =>
         order.id === orderId ? { ...order, status: 'Cancelado' } : order
@@ -236,6 +275,13 @@ function PedidosPageContent() {
       variant: "destructive",
       title: "Pedido Cancelado!",
       description: `O pedido #${orderId} foi cancelado.`,
+    });
+
+    addNotification({
+        title: 'Pedido Cancelado',
+        description: `O pedido #${orderId} de ${orderToCancel.customerName} foi cancelado.`,
+        targetRoles: ['Administrador', 'Funcionário'],
+        link: '/pedidos'
     });
   };
 
@@ -303,6 +349,14 @@ function PedidosPageContent() {
         address: newOrder.address,
         locationLink: newOrder.locationLink,
         orderTotal: newOrder.total,
+    });
+    
+    // Add notification for admin
+    addNotification({
+        title: `Novo Pedido #${newOrderId}`,
+        description: `Cliente: ${newOrder.customerName}, Total: ${total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`,
+        targetRoles: ['Administrador'],
+        link: '/pedidos'
     });
   };
 

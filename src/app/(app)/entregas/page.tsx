@@ -10,11 +10,13 @@ import { Bike, Check, MapPin, Phone, Link as LinkIcon, ExternalLink } from 'luci
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useUser } from '@/contexts/user-context';
 
 
 export default function EntregasPage() {
     const { toast } = useToast();
     const [orders, setOrders] = useState<Order[]>(mockOrders);
+    const { addNotification } = useUser();
 
     const deliveryOrders = orders.filter(
         order => order.orderType === 'entrega' && ['Pronto', 'Em Entrega', 'Entregue'].includes(order.status)
@@ -28,10 +30,12 @@ export default function EntregasPage() {
 
     const handleAdvanceStatus = (orderId: string) => {
         let nextStatus: OrderStatus | undefined;
+        let originalOrder: Order | undefined;
 
         setOrders(prevOrders =>
             prevOrders.map(order => {
                 if (order.id !== orderId) return order;
+                originalOrder = order;
 
                 if (order.status === 'Pronto') {
                     nextStatus = 'Em Entrega';
@@ -45,11 +49,27 @@ export default function EntregasPage() {
             })
         );
         
-        if (nextStatus) {
+        if (nextStatus && originalOrder) {
             toast({
                 title: "Status do Pedido Atualizado!",
                 description: `O pedido #${orderId} agora está: ${nextStatus}.`,
             });
+            
+            if (nextStatus === 'Em Entrega') {
+              addNotification({
+                title: `Pedido #${orderId} em Rota`,
+                description: `O pedido de ${originalOrder.customerName} saiu para entrega.`,
+                targetRoles: ['Administrador'],
+                link: '/entregas'
+              });
+            } else if (nextStatus === 'Entregue') {
+               addNotification({
+                title: 'Pedido Entregue',
+                description: `O pedido #${orderId} de ${originalOrder.customerName} foi entregue.`,
+                targetRoles: ['Administrador'],
+                link: '/entregas'
+              });
+            }
         }
     };
     

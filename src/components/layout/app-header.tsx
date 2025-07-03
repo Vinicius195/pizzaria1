@@ -4,11 +4,17 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { LogOut, Settings, User } from 'lucide-react';
+import { Bell, LogOut, Settings, User } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { ThemeToggle } from '../theme-toggle';
 import { useUser } from '@/contexts/user-context';
+import { Badge } from '@/components/ui/badge';
+import type { Notification } from '@/types';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 const getPageTitle = (pathname: string) => {
   if (pathname.startsWith('/dashboard')) return 'Dashboard';
@@ -24,7 +30,13 @@ export function AppHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const title = getPageTitle(pathname);
-  const { currentUser, logout } = useUser();
+  const { 
+    currentUser, 
+    logout, 
+    notifications,
+    markNotificationAsRead,
+    markAllNotificationsAsRead
+  } = useUser();
 
   const handleLogout = () => {
     logout();
@@ -35,6 +47,19 @@ export function AppHeader() {
     return null; 
   }
 
+  const userNotifications = notifications
+    .filter(n => n.targetRoles.includes(currentUser.role))
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+  const unreadCount = userNotifications.filter(n => !n.isRead).length;
+
+  const handleNotificationClick = (notification: Notification) => {
+    markNotificationAsRead(notification.id);
+    if (notification.link) {
+        router.push(notification.link);
+    }
+  };
+
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm lg:px-6">
       <div className="flex items-center gap-2">
@@ -43,6 +68,64 @@ export function AppHeader() {
       </div>
       <div className="ml-auto flex items-center gap-2">
         <ThemeToggle />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+              <Bell className="h-5 w-5" />
+              {unreadCount > 0 && (
+                <Badge className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-accent p-0 text-xs text-accent-foreground">
+                  {unreadCount}
+                </Badge>
+              )}
+              <span className="sr-only">Notificações</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-80 md:w-96">
+            <DropdownMenuLabel className="flex justify-between items-center">
+              <span>Notificações</span>
+              {unreadCount > 0 && <Badge variant="secondary">{unreadCount} nova(s)</Badge>}
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <ScrollArea className="h-[400px]">
+              {userNotifications.length > 0 ? (
+                userNotifications.map(notification => (
+                  <DropdownMenuItem
+                    key={notification.id}
+                    className={cn("flex flex-col items-start gap-1 whitespace-normal cursor-pointer", !notification.isRead && "bg-primary/5")}
+                    onClick={() => handleNotificationClick(notification)}
+                  >
+                    <div className="flex w-full justify-between items-center">
+                        <p className="font-semibold text-sm">{notification.title}</p>
+                        {!notification.isRead && <div className="h-2 w-2 rounded-full bg-primary" />}
+                    </div>
+                    <p className="text-xs text-muted-foreground">{notification.description}</p>
+                    <p className="text-xs text-muted-foreground/80 self-end">
+                      {formatDistanceToNow(new Date(notification.timestamp), { addSuffix: true, locale: ptBR })}
+                    </p>
+                  </DropdownMenuItem>
+                ))
+              ) : (
+                <div className="flex flex-col items-center justify-center p-8 text-center text-sm text-muted-foreground">
+                    <Bell className="h-8 w-8 mb-2" />
+                    <p>Nenhuma notificação por aqui.</p>
+                </div>
+              )}
+            </ScrollArea>
+            {userNotifications.length > 0 && (
+                <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="justify-center"
+                      onClick={markAllNotificationsAsRead}
+                      disabled={unreadCount === 0}
+                    >
+                      Marcar todas como lidas
+                    </DropdownMenuItem>
+                </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-10 w-10 rounded-full">

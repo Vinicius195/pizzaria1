@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import type { UserProfile, UserRole, UserStatus, Customer } from '@/types';
+import type { UserProfile, UserRole, UserStatus, Customer, Notification } from '@/types';
 import { mockCustomers, mockProducts, mockOrders } from '@/lib/mock-data';
 
 // Mock initial data. In a real app, this might be an empty array.
@@ -44,17 +44,23 @@ interface UserContextType {
   deleteUser: (key: string) => void;
   addOrUpdateCustomer: (data: CustomerData) => void;
   isLoading: boolean;
+  notifications: Notification[];
+  addNotification: (notification: Omit<Notification, 'id' | 'timestamp' | 'isRead'>) => void;
+  markNotificationAsRead: (id: string) => void;
+  markAllNotificationsAsRead: () => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 const USERS_STORAGE_KEY = 'pizzafast-users';
 const CUSTOMERS_STORAGE_KEY = 'pizzafast-customers';
+const NOTIFICATIONS_STORAGE_KEY = 'pizzafast-notifications';
 const CURRENT_USER_STORAGE_KEY = 'currentUserKey';
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [currentUserKey, setCurrentUserKey] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -74,6 +80,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
         } else {
             setCustomers(mockCustomers);
             localStorage.setItem(CUSTOMERS_STORAGE_KEY, JSON.stringify(mockCustomers));
+        }
+
+        const storedNotifications = localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
+        if (storedNotifications) {
+            setNotifications(JSON.parse(storedNotifications));
         }
 
         const storedUserKey = localStorage.getItem(CURRENT_USER_STORAGE_KEY);
@@ -104,6 +115,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
       localStorage.setItem(CUSTOMERS_STORAGE_KEY, JSON.stringify(updatedCustomers));
     } catch (error) {
       console.error("Could not save customers to localStorage.", error);
+    }
+  };
+
+  const saveNotifications = (updatedNotifications: Notification[]) => {
+    setNotifications(updatedNotifications);
+    try {
+      localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(updatedNotifications));
+    } catch (error) {
+      console.error("Could not save notifications to localStorage.", error);
     }
   };
 
@@ -198,6 +218,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
             if (data.name) {
                 updatedUser.fallback = data.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
             }
+            if (!data.password || data.password.trim() === '') {
+              updatedUser.password = user.password;
+            }
             return updatedUser;
         }
         return user;
@@ -253,8 +276,52 @@ export function UserProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const addNotification = (notificationData: Omit<Notification, 'id' | 'timestamp' | 'isRead'>) => {
+    const newNotification: Notification = {
+      ...notificationData,
+      id: `notif-${Date.now()}-${Math.random()}`,
+      timestamp: new Date().toISOString(),
+      isRead: false,
+    };
+
+    setNotifications(prev => {
+      const updatedNotifications = [newNotification, ...prev].slice(0, 50); // Keep last 50
+      saveNotifications(updatedNotifications);
+      return updatedNotifications;
+    });
+  };
+
+  const markNotificationAsRead = (id: string) => {
+    const updated = notifications.map(n => (n.id === id ? { ...n, isRead: true } : n));
+    saveNotifications(updated);
+  };
+
+  const markAllNotificationsAsRead = () => {
+    if (!currentUser) return;
+    const updated = notifications.map(n =>
+      n.targetRoles.includes(currentUser.role) ? { ...n, isRead: true } : n
+    );
+    saveNotifications(updated);
+  };
+
   return (
-    <UserContext.Provider value={{ currentUser, users, customers, login, logout, isLoading, registerUser, updateUserStatus, updateUser, deleteUser, addOrUpdateCustomer }}>
+    <UserContext.Provider value={{ 
+      currentUser, 
+      users, 
+      customers, 
+      login, 
+      logout, 
+      isLoading, 
+      registerUser, 
+      updateUserStatus, 
+      updateUser, 
+      deleteUser, 
+      addOrUpdateCustomer,
+      notifications,
+      addNotification,
+      markNotificationAsRead,
+      markAllNotificationsAsRead,
+    }}>
       {children}
     </UserContext.Provider>
   );
