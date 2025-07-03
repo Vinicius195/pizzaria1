@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { mockOrders } from "@/lib/mock-data";
+import { useUser } from "@/contexts/user-context";
 import type { OrderStatus } from "@/types";
 import { cn } from "@/lib/utils";
 import { Package, ChefHat, Pizza, Bike, CheckCircle, XCircle, TrendingUp, DollarSign } from "lucide-react";
@@ -34,15 +34,17 @@ const statCards: StatCard[] = [
 ];
 
 export default function DashboardPage() {
+  const { orders } = useUser();
+
   const getOrderCountByStatus = (status: OrderStatus) => {
-    return mockOrders.filter(order => order.status === status).length;
+    return orders.filter(order => order.status === status).length;
   };
 
-  const totalRevenue = mockOrders
+  const totalRevenue = orders
     .filter(order => order.status !== 'Cancelado')
     .reduce((acc, order) => acc + order.total, 0);
 
-  const totalOrders = mockOrders.filter(order => order.status !== 'Cancelado').length;
+  const totalOrders = orders.filter(order => order.status !== 'Cancelado').length;
 
   const getStatusBadgeClasses = (status: OrderStatus): string => {
     switch (status) {
@@ -127,7 +129,7 @@ export default function DashboardPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockOrders.slice(0, 5).map(order => (
+              {orders.slice(0, 5).map(order => (
                 <TableRow key={order.id}>
                   <TableCell className="font-medium">#{order.id}</TableCell>
                   <TableCell>
