@@ -12,7 +12,6 @@ import {
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { orderStatuses, mockProducts } from '@/lib/mock-data';
 import type { Order, OrderStatus } from '@/types';
 import { Clock, PlusCircle, Bike, MoreHorizontal, Search, MessageSquare, ChefHat, Pizza as PizzaIcon, Package, Trash2, Edit } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -38,6 +37,8 @@ import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
+const orderStatuses: OrderStatus[] = ["Recebido", "Preparando", "Pronto", "Em Entrega", "Entregue", "Cancelado"];
+
 function OrderCard({ 
   order, 
   onAdvanceStatus, 
@@ -46,9 +47,9 @@ function OrderCard({
   onEditOrder
 }: { 
   order: Order; 
-  onAdvanceStatus: (orderId: string) => void; 
+  onAdvanceStatus: (orderId: number) => void; 
   onViewDetails: (order: Order) => void; 
-  onCancelOrder: (orderId: string) => void; 
+  onCancelOrder: (orderId: number) => void; 
   onEditOrder: (order: Order) => void;
 }) {
   const { currentUser } = useUser();
@@ -69,7 +70,7 @@ function OrderCard({
   const isActionDisabled = order.status === 'Entregue' || order.status === 'Cancelado';
 
   return (
-    <Card className={`shadow-md hover:shadow-lg transition-shadow border-l-4 bg-card ${getStatusColor(order.status)} flex flex-col`}>
+    <Card className={`shadow-md hover:shadow-lg transition-shadow border-l-4 bg-card ${getStatusColor(order.status as OrderStatus)} flex flex-col`}>
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <div>
@@ -199,7 +200,7 @@ function PedidosPageContent() {
   }, [customerFilter]);
   
   const allTabs = ['Todos', ...orderStatuses];
-  const defaultValue = statusFilter && allTabs.includes(statusFilter) ? statusFilter : 'Todos';
+  const defaultValue = statusFilter && allTabs.includes(statusFilter as OrderStatus) ? statusFilter : 'Todos';
 
   if (!currentUser) {
     return <PedidosPageSkeleton />;
@@ -220,18 +221,18 @@ function PedidosPageContent() {
     setIsOrderDialogOpen(true);
   };
 
-  const handleSubmitOrder = (data: AddOrderFormValues) => {
+  const handleSubmitOrder = async (data: AddOrderFormValues) => {
     if (editingOrder) {
-      updateOrder(editingOrder.id, data);
+      await updateOrder(editingOrder.id, data);
     } else {
-      addOrder(data);
+      await addOrder(data);
     }
     setIsOrderDialogOpen(false);
     setEditingOrder(null);
   };
   
-  const handleClearAllOrders = () => {
-    deleteAllOrders();
+  const handleClearAllOrders = async () => {
+    await deleteAllOrders();
     setIsClearAllDialogOpen(false);
   };
 
@@ -243,7 +244,7 @@ function PedidosPageContent() {
   };
 
   const filteredOrders = orders.filter(order =>
-    order.customerName.toLowerCase().includes(searchQuery.toLowerCase()) || order.id.includes(searchQuery)
+    order.customerName.toLowerCase().includes(searchQuery.toLowerCase()) || String(order.id).includes(searchQuery)
   );
 
   const ordersByStatus = (status: OrderStatus) => {
@@ -395,18 +396,18 @@ function PedidosPageContent() {
                     <Badge
                       className={cn(
                         "w-6 h-6 flex items-center justify-center p-0 rounded-full text-xs",
-                        ordersByStatus(status).length > 0 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                        ordersByStatus(status as OrderStatus).length > 0 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
                       )}
                     >
-                      {ordersByStatus(status).length}
+                      {ordersByStatus(status as OrderStatus).length}
                     </Badge>
                   </TabsTrigger>
                 ))}
               </TabsList>
               {kanbanStatuses.map(({ status, icon: Icon }) => (
                 <TabsContent key={status} value={status} className="mt-4 grid gap-4">
-                  {ordersByStatus(status).length > 0 ? (
-                    ordersByStatus(status).map((order) => (
+                  {ordersByStatus(status as OrderStatus).length > 0 ? (
+                    ordersByStatus(status as OrderStatus).map((order) => (
                       <OrderCard
                         key={order.id}
                         order={order}
@@ -436,11 +437,11 @@ function PedidosPageContent() {
                                   <Icon className="h-5 w-5" />
                                   <h2 className="font-headline font-semibold text-lg">{status}</h2>
                               </div>
-                              <Badge className="bg-white/20 text-white hover:bg-white/30">{ordersByStatus(status).length}</Badge>
+                              <Badge className="bg-white/20 text-white hover:bg-white/30">{ordersByStatus(status as OrderStatus).length}</Badge>
                           </div>
                           <div className="h-full min-h-[calc(100vh-320px)] bg-muted/40 rounded-b-lg p-3 space-y-4">
-                              {ordersByStatus(status).length > 0 ? (
-                                  ordersByStatus(status).map((order) => (
+                              {ordersByStatus(status as OrderStatus).length > 0 ? (
+                                  ordersByStatus(status as OrderStatus).map((order) => (
                                       <OrderCard
                                           key={order.id}
                                           order={order}

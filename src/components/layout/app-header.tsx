@@ -38,8 +38,8 @@ export function AppHeader() {
     markAllNotificationsAsRead
   } = useUser();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     router.push('/');
   };
 
@@ -48,17 +48,21 @@ export function AppHeader() {
   }
 
   const userNotifications = notifications
-    .filter(n => n.targetRoles.includes(currentUser.role))
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    .filter(n => (n.targetRoles as unknown as string[]).includes(currentUser.role as string))
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   const unreadCount = userNotifications.filter(n => !n.isRead).length;
 
-  const handleNotificationClick = (notification: Notification) => {
-    markNotificationAsRead(notification.id);
+  const handleNotificationClick = async (notification: Notification) => {
+    await markNotificationAsRead(notification.id);
     if (notification.link) {
         router.push(notification.link);
     }
   };
+  
+  const handleMarkAllAsRead = async () => {
+      await markAllNotificationsAsRead();
+  }
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm lg:px-6">
@@ -105,7 +109,7 @@ export function AppHeader() {
                       {notification.description}
                     </p>
                     <p className="text-xs text-muted-foreground/80 group-focus:text-inherit group-focus:opacity-70 self-end">
-                      {formatDistanceToNow(new Date(notification.timestamp), { addSuffix: true, locale: ptBR })}
+                      {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true, locale: ptBR })}
                     </p>
                   </DropdownMenuItem>
                 ))
@@ -121,7 +125,7 @@ export function AppHeader() {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       className="justify-center"
-                      onClick={markAllNotificationsAsRead}
+                      onClick={handleMarkAllAsRead}
                       disabled={unreadCount === 0}
                     >
                       Marcar todas como lidas
@@ -135,7 +139,7 @@ export function AppHeader() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-10 w-10 rounded-full">
               <Avatar className="h-10 w-10 border-2 border-primary">
-                <AvatarImage src={currentUser.avatar} alt={`@${currentUser.name}`} data-ai-hint="user avatar" />
+                <AvatarImage src={currentUser.avatar || undefined} alt={`@${currentUser.name}`} data-ai-hint="user avatar" />
                 <AvatarFallback>{currentUser.fallback}</AvatarFallback>
               </Avatar>
             </Button>
@@ -148,7 +152,7 @@ export function AppHeader() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem disabled>
               <User className="mr-2 h-4 w-4" />
               <span>Perfil</span>
             </DropdownMenuItem>

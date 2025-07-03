@@ -24,7 +24,7 @@ import { Eye, EyeOff } from 'lucide-react';
 
 const editUserSchema = z.object({
   name: z.string().min(3, "O nome deve ter pelo menos 3 caracteres."),
-  email: z.string().min(1, "O usuário é obrigatório.").refine(s => !s.includes('@'), 'Apenas o nome de usuário, sem o domínio.'),
+  email: z.string().email("Por favor, insira um email válido."),
   role: z.enum(['Administrador', 'Funcionário']),
   password: z.string().min(6, "A nova senha deve ter pelo menos 6 caracteres.").optional().or(z.literal('')),
 });
@@ -51,30 +51,24 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
   useEffect(() => {
     if (user && open) {
       reset({
-        name: user.name,
-        email: user.email.split('@')[0],
-        role: user.role,
+        name: user.name || '',
+        email: user.email || '',
+        role: user.role as UserRole,
         password: '', // Always clear password on open
       });
     }
   }, [user, open, reset]);
 
-  const handleFormSubmit = (data: EditUserFormValues) => {
+  const handleFormSubmit = async (data: EditUserFormValues) => {
     if (!user) return;
-
-    const fullEmail = `${data.email}@belamassa.com`;
+    
     const payload: Partial<UserProfile> = {
       name: data.name,
-      email: fullEmail,
+      email: data.email,
       role: data.role as UserRole,
     };
     
-    // Only include password in payload if it's not empty
-    if (data.password && data.password.trim() !== '') {
-        payload.password = data.password;
-    }
-
-    const result = updateUser(user.key, payload);
+    const result = await updateUser(user.id, payload, data.password);
     
     toast({
       title: result.success ? 'Usuário Atualizado!' : 'Erro!',
@@ -114,19 +108,9 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Usuário</FormLabel>
+                  <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <div className="flex items-center rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
-                        <Input
-                            type="text"
-                            placeholder="usuario"
-                            className="flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
-                            {...field}
-                        />
-                        <span className="self-stretch border-l bg-muted px-3 flex items-center text-sm text-muted-foreground">
-                            @belamassa.com
-                        </span>
-                    </div>
+                    <Input type="email" placeholder="email@dominio.com" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -138,7 +122,7 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Função</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl><SelectTrigger><SelectValue placeholder="Selecione a função" /></SelectTrigger></FormControl>
                     <SelectContent>
                       <SelectItem value="Funcionário">Funcionário</SelectItem>

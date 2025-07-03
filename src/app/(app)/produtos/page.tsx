@@ -14,7 +14,6 @@ import { AddProductDialog, type ProductFormValues } from '@/components/app/add-p
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useUser } from '@/contexts/user-context';
 import { Input } from '@/components/ui/input';
-import { getMockSettings } from '@/lib/settings-data';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ProdutosPage() {
@@ -26,29 +25,29 @@ export default function ProdutosPage() {
   const { 
     currentUser, 
     products, 
-    isLoading, 
+    isLoading,
+    settings, 
     toggleProductAvailability, 
     addProduct, 
     updateProduct,
     deleteProduct,
   } = useUser();
-  const settings = getMockSettings();
 
-  if (isLoading || !currentUser) {
+  if (isLoading || !currentUser || !settings) {
     return <ProdutosPageSkeleton />;
   }
 
   const isManager = currentUser.role === 'Administrador';
 
-  const handleSubmitProduct = (data: ProductFormValues) => {
+  const handleSubmitProduct = async (data: ProductFormValues) => {
     if (editingProduct) {
-        updateProduct(editingProduct.id, data);
+        await updateProduct(editingProduct.id, data);
         toast({
             title: "Produto Atualizado!",
             description: `O produto "${data.name}" foi atualizado com sucesso.`,
         });
     } else {
-        addProduct(data);
+        await addProduct(data);
         toast({
             title: "Produto Adicionado!",
             description: `O produto "${data.name}" foi adicionado com sucesso.`,
@@ -117,10 +116,10 @@ export default function ProdutosPage() {
                         )}
                       </CardHeader>
                       <CardContent>
-                        {product.sizes ? (
+                        {product.sizes && typeof product.sizes === 'object' ? (
                           <div className="space-y-2">
                             {Object.entries(product.sizes)
-                               .filter(([size]) => product.category !== 'Pizza' || settings.sizeAvailability[size as PizzaSize])
+                               .filter(([size]) => product.category !== 'Pizza' || (settings.sizeAvailability as any)[size as PizzaSize])
                                .map(([size, price]) => (
                               <div key={size} className="flex justify-between items-center text-sm">
                                 <span className="text-muted-foreground capitalize">{size}</span>
@@ -158,8 +157,8 @@ export default function ProdutosPage() {
   }
 
   // Admin-facing management view
-  const handleToggleAvailable = (productId: string, isAvailable: boolean) => {
-    toggleProductAvailability(productId, isAvailable);
+  const handleToggleAvailable = async (productId: string, isAvailable: boolean) => {
+    await toggleProductAvailability(productId, isAvailable);
   };
   
   const handleOpenAddDialog = () => {
@@ -172,28 +171,30 @@ export default function ProdutosPage() {
     setIsDialogOpen(true);
   };
 
-  const handleDuplicateProduct = (product: Product) => {
-    const { id, isAvailable, ...productData } = product;
+  const handleDuplicateProduct = async (product: Product) => {
+    const { id, created_at, ...productData } = product;
+    const sizes = product.sizes as Record<string, number> | null;
+
     const data: ProductFormValues = {
         name: `${product.name} (Cópia)`,
-        category: product.category,
-        description: product.description,
-        price: product.price,
-        pizzaSizes: product.category === 'Pizza' ? product.sizes : undefined,
-        drinkSizes: product.category === 'Bebida' && product.sizes 
-            ? Object.entries(product.sizes).map(([name, price]) => ({name, price}))
+        category: product.category as 'Pizza' | 'Bebida' | 'Adicional',
+        description: product.description || undefined,
+        price: product.price || undefined,
+        pizzaSizes: product.category === 'Pizza' ? sizes as any : undefined,
+        drinkSizes: product.category === 'Bebida' && sizes 
+            ? Object.entries(sizes).map(([name, price]) => ({name, price}))
             : undefined,
     }
-    addProduct(data);
+    await addProduct(data);
     toast({
       title: "Produto Duplicado!",
       description: `O produto "${product.name}" foi duplicado com sucesso.`,
     });
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!deletingProduct) return;
-    deleteProduct(deletingProduct.id);
+    await deleteProduct(deletingProduct.id);
     toast({
       variant: "destructive",
       title: "Produto Deletado!",
@@ -206,7 +207,7 @@ export default function ProdutosPage() {
     ? products.filter(
         p =>
           p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (p.sizes &&
+          (p.sizes && typeof p.sizes === 'object' &&
             Object.keys(p.sizes).some(size =>
               size.toLowerCase().includes(searchQuery.toLowerCase())
             ))
@@ -318,7 +319,7 @@ export default function ProdutosPage() {
                               {product.description}
                             </p>
                           )}
-                          {product.sizes && (
+                          {product.sizes && typeof product.sizes === 'object' && (
                             <div className="my-2 space-y-1">
                               {Object.entries(product.sizes).map(([size, price]) => (
                                 <div key={size} className="flex justify-between items-center text-sm">

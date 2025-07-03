@@ -29,13 +29,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { Product, PizzaSize } from '@/types';
+import type { Product } from '@/types';
 import { pizzaSizes } from '@/types';
 import { useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
-import { getMockSettings } from '@/lib/settings-data';
 import { PlusCircle, Trash2 } from 'lucide-react';
-import { Separator } from '../ui/separator';
+import { useUser } from '@/contexts/user-context';
 
 const productSchema = z.object({
   name: z.string().min(3, "O nome do produto deve ter pelo menos 3 caracteres."),
@@ -44,10 +43,8 @@ const productSchema = z.object({
   }),
   description: z.string().optional(),
   
-  // For 'Adicional'
   price: z.coerce.number().optional(),
 
-  // For 'Pizza'
   pizzaSizes: z.object({
     pequeno: z.coerce.number().optional(),
     medio: z.coerce.number().optional(),
@@ -55,7 +52,6 @@ const productSchema = z.object({
     GG: z.coerce.number().optional(),
   }).optional(),
   
-  // For 'Bebida'
   drinkSizes: z.array(z.object({
     name: z.string().min(1, "O nome do tamanho é obrigatório (ex: 2L, Lata)."),
     price: z.coerce.number().min(0.01, "O preço deve ser positivo.")
@@ -100,6 +96,8 @@ interface AddProductDialogProps {
 }
 
 export function AddProductDialog({ open, onOpenChange, onSubmit, product }: AddProductDialogProps) {
+  const { settings } = useUser();
+
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
     defaultValues: {
@@ -123,19 +121,20 @@ export function AddProductDialog({ open, onOpenChange, onSubmit, product }: AddP
   useEffect(() => {
     if (open) {
       if (product) {
+        const sizes = product.sizes as Record<string, number> | null;
         reset({
           name: product.name,
-          category: product.category,
+          category: product.category as 'Pizza' | 'Bebida' | 'Adicional',
           description: product.description || '',
           price: product.price || 0,
           pizzaSizes: {
-            pequeno: product.sizes?.pequeno || 0,
-            medio: product.sizes?.medio || 0,
-            grande: product.sizes?.grande || 0,
-            GG: product.sizes?.GG || 0,
+            pequeno: sizes?.pequeno || 0,
+            medio: sizes?.medio || 0,
+            grande: sizes?.grande || 0,
+            GG: sizes?.GG || 0,
           },
-          drinkSizes: product.category === 'Bebida' && product.sizes 
-            ? Object.entries(product.sizes).map(([name, price]) => ({ name, price: price as number }))
+          drinkSizes: product.category === 'Bebida' && sizes 
+            ? Object.entries(sizes).map(([name, price]) => ({ name, price: price as number }))
             : [],
         });
       } else {
@@ -144,12 +143,12 @@ export function AddProductDialog({ open, onOpenChange, onSubmit, product }: AddP
           category: undefined,
           price: 0,
           description: '',
-          pizzaSizes: getMockSettings().basePrices,
+          pizzaSizes: settings?.basePrices as any || { pequeno: 0, medio: 0, grande: 0, GG: 0 },
           drinkSizes: [],
         });
       }
     }
-  }, [product, open, reset]);
+  }, [product, open, reset, settings]);
 
   const handleDialogClose = () => {
     onOpenChange(false);

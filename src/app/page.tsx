@@ -9,8 +9,6 @@ import {
   Card,
   CardContent,
   CardFooter,
-  CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -21,7 +19,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
 
 const loginSchema = z.object({
-  email: z.string().min(1, "Por favor, insira seu nome de usuário.").refine(s => !s.includes('@'), 'Apenas o nome de usuário, sem o domínio.'),
+  email: z.string().email("Por favor, insira um email válido."),
   password: z.string().min(1, "A senha é obrigatória."),
 });
 
@@ -41,10 +39,9 @@ export default function LoginPage() {
     },
   });
 
-  const handleLogin = (data: LoginFormValues) => {
+  const handleLogin = async (data: LoginFormValues) => {
     setLoginError(null);
-    const fullEmail = `${data.email}@belamassa.com`;
-    const result = login(fullEmail, data.password);
+    const result = await login(data.email, data.password);
     if (result.success) {
       router.push('/dashboard');
     } else {
@@ -83,19 +80,13 @@ export default function LoginPage() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Usuário</FormLabel>
+                      <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <div className="flex items-center rounded-md border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
-                            <Input
-                                type="text"
-                                placeholder="seu.nome"
-                                className="flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
-                                {...field}
-                            />
-                            <span className="self-stretch border-l bg-muted px-3 flex items-center text-sm text-muted-foreground">
-                                @belamassa.com
-                            </span>
-                        </div>
+                        <Input
+                            type="email"
+                            placeholder="seu.nome@email.com"
+                            {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

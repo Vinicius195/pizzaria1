@@ -34,8 +34,8 @@ export default function ClientesPage() {
     setIsDialogOpen(true);
   };
 
-  const handleSubmit = (data: CustomerFormValues) => {
-    addOrUpdateCustomer({
+  const handleSubmit = async (data: CustomerFormValues) => {
+    await addOrUpdateCustomer({
       id: editingCustomer?.id, // Pass ID if editing
       name: data.name,
       phone: data.phone,
@@ -53,9 +53,9 @@ export default function ClientesPage() {
     router.push(`/pedidos?cliente=${encodeURIComponent(customerName)}`);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deletingCustomer) return;
-    deleteCustomer(deletingCustomer.id);
+    await deleteCustomer(deletingCustomer.id);
     toast({
       variant: 'destructive',
       title: 'Cliente Excluído!',
@@ -73,7 +73,7 @@ export default function ClientesPage() {
         customer={editingCustomer}
       />
 
-       <AlertDialog open={!!deletingCustomer} onOpenChange={setDeletingCustomer}>
+       <AlertDialog open={!!deletingCustomer} onOpenChange={(open) => !open && setDeletingCustomer(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>

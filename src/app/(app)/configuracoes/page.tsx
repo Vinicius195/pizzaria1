@@ -9,14 +9,13 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { getMockSettings, updateMockSettings } from '@/lib/settings-data';
-import { pizzaSizes, type UserProfile, type UserStatus } from '@/types';
+import { pizzaSizes, type UserProfile, type UserStatus, type PizzaSettings } from '@/types';
 import { useUser } from '@/contexts/user-context';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Check, X, MoreHorizontal, Edit, Eye, Trash2 } from 'lucide-react';
+import { Check, X, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { EditUserDialog } from '@/components/app/edit-user-dialog';
@@ -38,7 +37,7 @@ const settingsSchema = z.object({
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
 
-function getStatusBadgeClasses(status: UserStatus): string {
+function getStatusBadgeClasses(status: UserStatus | null): string {
     switch (status) {
       case 'Aprovado':
         return 'bg-green-500/10 text-green-700 border-green-500/20';
@@ -53,35 +52,47 @@ function getStatusBadgeClasses(status: UserStatus): string {
 
 export default function ConfiguracoesPage() {
   const { toast } = useToast();
-  const { currentUser, users, updateUserStatus, deleteUser } = useUser();
+  const { currentUser, users, updateUserStatus, deleteUser, settings, updateSettings } = useUser();
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
   const [deletingUser, setDeletingUser] = useState<UserProfile | null>(null);
-  const [viewingPasswordUser, setViewingPasswordUser] = useState<UserProfile | null>(null);
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
-    defaultValues: getMockSettings(),
+    defaultValues: {
+      basePrices: { pequeno: 0, medio: 0, grande: 0, GG: 0 },
+      sizeAvailability: { pequeno: false, medio: false, grande: false, GG: false },
+    },
   });
 
-  const onSubmit = (data: SettingsFormValues) => {
-    updateMockSettings(data);
+  useEffect(() => {
+    if (settings) {
+      form.reset({
+        basePrices: settings.basePrices as any,
+        sizeAvailability: settings.sizeAvailability as any,
+      });
+    }
+  }, [settings, form]);
+
+  const onSubmit = async (data: SettingsFormValues) => {
+    await updateSettings(data as PizzaSettings);
     toast({
       title: 'Configurações Salvas!',
       description: 'Suas alterações foram salvas com sucesso.',
     });
   };
   
-  const handleUpdateStatus = (user: UserProfile, status: UserStatus) => {
-    updateUserStatus(user.key, status);
+  const handleUpdateStatus = async (user: UserProfile, status: UserStatus) => {
+    if (!user.id) return;
+    await updateUserStatus(user.id, status);
     toast({
         title: 'Usuário Atualizado!',
         description: `O status de ${user.name} foi alterado para ${status}.`,
     });
   };
 
-  const handleDeleteUser = () => {
-    if (!deletingUser) return;
-    deleteUser(deletingUser.key);
+  const handleDeleteUser = async () => {
+    if (!deletingUser || !deletingUser.id) return;
+    await deleteUser(deletingUser.id);
     toast({
       title: 'Usuário Excluído!',
       description: `O usuário ${deletingUser.name} foi removido.`,
@@ -112,25 +123,6 @@ export default function ConfiguracoesPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={!!viewingPasswordUser} onOpenChange={(open) => !open && setViewingPasswordUser(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Senha de {viewingPasswordUser?.name}</AlertDialogTitle>
-            <AlertDialogDescription>
-              A senha do usuário é:
-            </AlertDialogDescription>
-            <div className="bg-muted text-muted-foreground rounded-md px-3 py-2 font-mono text-sm break-all mt-2">
-              {viewingPasswordUser?.password || 'Senha não definida'}
-            </div>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel asChild>
-              <Button>Fechar</Button>
-            </AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold font-headline">Configurações</h1>
@@ -157,7 +149,7 @@ export default function ConfiguracoesPage() {
                   </TableHeader>
                   <TableBody>
                       {users.map(user => (
-                          <TableRow key={user.key}>
+                          <TableRow key={user.id}>
                               <TableCell className="font-medium">{user.name}</TableCell>
                               <TableCell className="hidden sm:table-cell">{user.email}</TableCell>
                               <TableCell className="hidden md:table-cell">{user.role}</TableCell>
@@ -178,7 +170,7 @@ export default function ConfiguracoesPage() {
                                             <span className="sr-only">Reprovar</span>
                                         </Button>
                                     </div>
-                                ) : user.key === currentUser?.key ? (
+                                ) : user.id === currentUser?.id ? (
                                     <Badge variant="outline" className="font-medium">Você</Badge>
                                 ) : (
                                     <DropdownMenu>
@@ -195,10 +187,6 @@ export default function ConfiguracoesPage() {
                                                     <DropdownMenuItem onClick={() => setEditingUser(user)}>
                                                         <Edit className="mr-2 h-4 w-4" />
                                                         <span>Editar</span>
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => setViewingPasswordUser(user)}>
-                                                        <Eye className="mr-2 h-4 w-4" />
-                                                        <span>Ver Senha</span>
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
                                                 </>
