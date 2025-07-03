@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import type { UserProfile, UserRole, UserStatus, Customer } from '@/types';
-import { mockCustomers } from '@/lib/mock-data';
+import { mockCustomers, mockProducts, mockOrders } from '@/lib/mock-data';
 
 // Mock initial data. In a real app, this might be an empty array.
 const initialUserProfiles: UserProfile[] = [
@@ -40,6 +40,8 @@ interface UserContextType {
   logout: () => void;
   registerUser: (details: Omit<UserProfile, 'key' | 'status' | 'avatar' | 'fallback'>) => RegisterResult;
   updateUserStatus: (key: string, status: UserStatus) => void;
+  updateUser: (key: string, data: Partial<UserProfile>) => RegisterResult;
+  deleteUser: (key: string) => void;
   addOrUpdateCustomer: (data: CustomerData) => void;
   isLoading: boolean;
 }
@@ -113,7 +115,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     );
 
     if (!user) {
-      return { success: false, message: "E-mail ou senha inválidos. Tente novamente." };
+      return { success: false, message: "Usuário ou senha inválidos. Tente novamente." };
     }
 
     if (user.status === 'Pendente') {
@@ -179,13 +181,47 @@ export function UserProvider({ children }: { children: ReactNode }) {
     );
     saveUsers(updatedUsers);
   };
+
+  const updateUser = (key: string, data: Partial<UserProfile>): RegisterResult => {
+    const userToUpdate = users.find(u => u.key === key);
+    if (!userToUpdate) {
+        return { success: false, message: 'Usuário não encontrado.' };
+    }
+
+    if (data.email && users.some(u => u.email.toLowerCase() === data.email?.toLowerCase() && u.key !== key)) {
+        return { success: false, message: 'Este e-mail já pertence a outra conta.' };
+    }
+    
+    const updatedUsers = users.map(user => {
+        if (user.key === key) {
+            const updatedUser = { ...user, ...data };
+            if (data.name) {
+                updatedUser.fallback = data.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+            }
+            // If the password field in the form is empty, keep the original password
+            if (!data.password || data.password.trim() === '') {
+                updatedUser.password = user.password;
+            }
+            return updatedUser;
+        }
+        return user;
+    });
+
+    saveUsers(updatedUsers);
+    return { success: true, message: 'Usuário atualizado com sucesso!' };
+  };
   
+  const deleteUser = (key: string) => {
+    const updatedUsers = users.filter(user => user.key !== key);
+    saveUsers(updatedUsers);
+  };
+
   const addOrUpdateCustomer = (data: CustomerData) => {
     setCustomers(prevCustomers => {
         // Try to find by ID (for edits) or by phone/name (for updates from orders)
         const existingCustomerIndex = prevCustomers.findIndex(c => 
             (data.id && c.id === data.id) || 
-            (c.phone && c.phone === data.phone) || 
+            (data.phone && c.phone === data.phone && c.phone !== '') || 
             (c.name.toLowerCase() === data.name.toLowerCase())
         );
 
@@ -222,7 +258,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <UserContext.Provider value={{ currentUser, users, customers, login, logout, isLoading, registerUser, updateUserStatus, addOrUpdateCustomer }}>
+    <UserContext.Provider value={{ currentUser, users, customers, login, logout, isLoading, registerUser, updateUserStatus, updateUser, deleteUser, addOrUpdateCustomer }}>
       {children}
     </UserContext.Provider>
   );
