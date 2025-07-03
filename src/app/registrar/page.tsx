@@ -19,6 +19,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { UserRole } from '@/types';
+import { supabase } from '@/lib/supabase/client';
 
 const registerSchema = z.object({
   name: z.string().min(3, "O nome deve ter pelo menos 3 caracteres."),
@@ -65,6 +66,23 @@ export default function RegisterPage() {
         }, 3000); // Redirect to login page after 3 seconds
     }
   };
+
+  if (!supabase) {
+    return (
+        <div className="flex min-h-screen w-full items-center justify-center bg-background p-4">
+            <Alert variant="destructive" className="max-w-lg">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Erro de Configuração</AlertTitle>
+                <AlertDescription>
+                    A conexão com o banco de dados (Supabase) não foi configurada.
+                    <p className="mt-2 text-xs">
+                        Por favor, adicione as variáveis <code>NEXT_PUBLIC_SUPABASE_URL</code> e <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> ao seu arquivo <code>.env</code> e reinicie o servidor de desenvolvimento.
+                    </p>
+                </AlertDescription>
+            </Alert>
+        </div>
+    )
+  }
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-background p-4">
