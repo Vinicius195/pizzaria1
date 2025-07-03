@@ -37,6 +37,7 @@ export default function RegisterPage() {
   const { registerUser } = useUser();
   const [formFeedback, setFormFeedback] = useState<{ type: 'error' | 'success'; message: string } | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const isSupabaseConfigured = !!supabase;
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -49,6 +50,7 @@ export default function RegisterPage() {
   });
 
   const handleRegister = async (data: RegisterFormValues) => {
+    if (!isSupabaseConfigured) return;
     setFormFeedback(null);
     const result = await registerUser({
         name: data.name,
@@ -67,23 +69,6 @@ export default function RegisterPage() {
     }
   };
 
-  if (!supabase) {
-    return (
-        <div className="flex min-h-screen w-full items-center justify-center bg-background p-4">
-            <Alert variant="destructive" className="max-w-lg">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Erro de Configuração</AlertTitle>
-                <AlertDescription>
-                    A conexão com o banco de dados (Supabase) não foi configurada.
-                    <p className="mt-2 text-xs">
-                        Por favor, adicione as variáveis <code>NEXT_PUBLIC_SUPABASE_URL</code> e <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> ao seu arquivo <code>.env</code> e reinicie o servidor de desenvolvimento.
-                    </p>
-                </AlertDescription>
-            </Alert>
-        </div>
-    )
-  }
-
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-6">
@@ -96,6 +81,20 @@ export default function RegisterPage() {
               Preencha seus dados para solicitar acesso
             </p>
         </div>
+
+        {!isSupabaseConfigured && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Erro de Configuração</AlertTitle>
+            <AlertDescription>
+              A conexão com o banco de dados (Supabase) não foi configurada.
+              <p className="mt-2 text-xs">
+                  Por favor, adicione as variáveis <code>NEXT_PUBLIC_SUPABASE_URL</code> e <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> ao seu arquivo <code>.env</code> e reinicie o servidor de desenvolvimento.
+              </p>
+            </AlertDescription>
+          </Alert>
+        )}
+
         <Card className="shadow-2xl">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleRegister)} className="space-y-6">
@@ -116,7 +115,7 @@ export default function RegisterPage() {
                     <FormItem>
                       <FormLabel>Nome Completo</FormLabel>
                       <FormControl>
-                        <Input placeholder="Seu nome" {...field} />
+                        <Input placeholder="Seu nome" {...field} disabled={!isSupabaseConfigured} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -133,6 +132,7 @@ export default function RegisterPage() {
                             type="email"
                             placeholder="seu.nome@email.com"
                             {...field}
+                            disabled={!isSupabaseConfigured}
                         />
                       </FormControl>
                       <FormMessage />
@@ -151,6 +151,7 @@ export default function RegisterPage() {
                             type={showPassword ? 'text' : 'password'}
                             placeholder="••••••••"
                             {...field}
+                            disabled={!isSupabaseConfigured}
                           />
                           <Button
                             type="button"
@@ -181,7 +182,7 @@ export default function RegisterPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Tipo de Conta</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!isSupabaseConfigured}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione o tipo de conta" />
@@ -198,7 +199,7 @@ export default function RegisterPage() {
                 />
               </CardContent>
               <CardFooter>
-                <Button type="submit" className="w-full bg-accent hover:bg-accent/90" disabled={form.formState.isSubmitting}>
+                <Button type="submit" className="w-full bg-accent hover:bg-accent/90" disabled={form.formState.isSubmitting || !isSupabaseConfigured}>
                   <UserPlus className="mr-2 h-4 w-4" />
                   Criar Conta
                 </Button>

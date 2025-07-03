@@ -31,6 +31,7 @@ export default function LoginPage() {
   const { login } = useUser();
   const [loginError, setLoginError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const isSupabaseConfigured = !!supabase;
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -41,6 +42,7 @@ export default function LoginPage() {
   });
 
   const handleLogin = async (data: LoginFormValues) => {
+    if (!isSupabaseConfigured) return;
     setLoginError(null);
     const result = await login(data.email, data.password);
     if (result.success) {
@@ -50,23 +52,6 @@ export default function LoginPage() {
       form.resetField('password');
     }
   };
-  
-  if (!supabase) {
-    return (
-        <div className="flex min-h-screen w-full items-center justify-center bg-background p-4">
-            <Alert variant="destructive" className="max-w-lg">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Erro de Configuração</AlertTitle>
-                <AlertDescription>
-                    A conexão com o banco de dados (Supabase) não foi configurada.
-                    <p className="mt-2 text-xs">
-                        Por favor, adicione as variáveis <code>NEXT_PUBLIC_SUPABASE_URL</code> e <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> ao seu arquivo <code>.env</code> e reinicie o servidor de desenvolvimento.
-                    </p>
-                </AlertDescription>
-            </Alert>
-        </div>
-    )
-  }
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-background p-4">
@@ -80,6 +65,20 @@ export default function LoginPage() {
               Faça login para gerenciar sua pizzaria
             </p>
         </div>
+
+        {!isSupabaseConfigured && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Erro de Configuração</AlertTitle>
+            <AlertDescription>
+              A conexão com o banco de dados (Supabase) não foi configurada.
+              <p className="mt-2 text-xs">
+                  Por favor, adicione as variáveis <code>NEXT_PUBLIC_SUPABASE_URL</code> e <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> ao seu arquivo <code>.env</code> e reinicie o servidor de desenvolvimento.
+              </p>
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <Card className="shadow-2xl">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleLogin)} className="space-y-6">
@@ -104,6 +103,7 @@ export default function LoginPage() {
                             type="email"
                             placeholder="seu.nome@email.com"
                             {...field}
+                            disabled={!isSupabaseConfigured}
                         />
                       </FormControl>
                       <FormMessage />
@@ -122,6 +122,7 @@ export default function LoginPage() {
                             type={showPassword ? 'text' : 'password'}
                             placeholder="••••••••"
                             {...field}
+                            disabled={!isSupabaseConfigured}
                           />
                           <Button
                             type="button"
@@ -148,7 +149,7 @@ export default function LoginPage() {
                 />
               </CardContent>
               <CardFooter>
-                <Button type="submit" className="w-full bg-accent hover:bg-accent/90" disabled={form.formState.isSubmitting}>
+                <Button type="submit" className="w-full bg-accent hover:bg-accent/90" disabled={form.formState.isSubmitting || !isSupabaseConfigured}>
                   <LogIn className="mr-2 h-4 w-4" />
                   Entrar
                 </Button>
