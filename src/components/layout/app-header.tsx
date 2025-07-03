@@ -91,15 +91,20 @@ export function AppHeader() {
                 userNotifications.map(notification => (
                   <DropdownMenuItem
                     key={notification.id}
-                    className={cn("flex flex-col items-start gap-1 whitespace-normal cursor-pointer", !notification.isRead && "bg-primary/5")}
+                    className={cn(
+                      "group flex flex-col items-start gap-1 whitespace-normal cursor-pointer",
+                      !notification.isRead && "bg-primary/10"
+                    )}
                     onClick={() => handleNotificationClick(notification)}
                   >
                     <div className="flex w-full justify-between items-center">
-                        <p className="font-semibold text-sm">{notification.title}</p>
-                        {!notification.isRead && <div className="h-2 w-2 rounded-full bg-primary" />}
+                      <p className="font-semibold text-sm">{notification.title}</p>
+                      {!notification.isRead && <div className="h-2 w-2 rounded-full bg-primary" />}
                     </div>
-                    <p className="text-xs text-muted-foreground">{notification.description}</p>
-                    <p className="text-xs text-muted-foreground/80 self-end">
+                    <p className="text-xs text-muted-foreground group-focus:text-inherit group-focus:opacity-90">
+                      {notification.description}
+                    </p>
+                    <p className="text-xs text-muted-foreground/80 group-focus:text-inherit group-focus:opacity-70 self-end">
                       {formatDistanceToNow(new Date(notification.timestamp), { addSuffix: true, locale: ptBR })}
                     </p>
                   </DropdownMenuItem>
