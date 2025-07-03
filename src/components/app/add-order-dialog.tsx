@@ -212,7 +212,7 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[625px]">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Adicionar Novo Pedido</DialogTitle>
           <DialogDescription>
@@ -221,7 +221,7 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="space-y-6 max-h-[70vh] sm:max-h-[65vh] overflow-y-auto p-1 pr-2 sm:pr-4">
+            <div className="space-y-6 max-h-[70vh] sm:max-h-[60vh] overflow-y-auto p-1 pr-4">
                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -502,7 +502,7 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
                             />
                         )}
 
-                        {isHalfHalf && (
+                        {isPizza && isHalfHalf && (
                              <FormField
                                 control={form.control}
                                 name={`items.${index}.product2Id`}

@@ -12,7 +12,6 @@ import {
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { mockOrders, orderStatuses, mockProducts } from '@/lib/mock-data';
 import type { Order, OrderStatus } from '@/types';
 import { Clock, PlusCircle, Bike, MoreHorizontal, Search, MessageSquare, ChefHat, Pizza as PizzaIcon, Package } from 'lucide-react';
@@ -165,7 +164,7 @@ const kanbanStatuses: { status: OrderStatus, icon: React.ElementType, color: str
 function PedidosPageContent() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  const { currentUser } = useUser();
+  const { currentUser, addOrUpdateCustomer } = useUser();
   const isMobile = useIsMobile();
   const statusFilter = searchParams.get('status');
   
@@ -296,6 +295,15 @@ function PedidosPageContent() {
     };
 
     setOrders(prevOrders => [newOrder, ...prevOrders]);
+
+    // Integrate with customer data
+    addOrUpdateCustomer({
+        name: newOrder.customerName,
+        phone: newOrder.customerPhone || '',
+        address: newOrder.address,
+        locationLink: newOrder.locationLink,
+        orderTotal: newOrder.total,
+    });
   };
 
   const filteredOrders = orders.filter(order =>
@@ -399,8 +407,10 @@ function PedidosPageContent() {
                     value={status}
                     className="flex flex-col h-auto p-2 gap-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-primary/5 data-[state=active]:shadow-none"
                   >
-                    <Icon className="h-5 w-5" />
-                    <span className="text-xs font-semibold">{status}</span>
+                    <div className="flex flex-col items-center gap-1">
+                      <Icon className="h-5 w-5" />
+                      <span className="text-xs font-semibold">{status}</span>
+                    </div>
                     <Badge
                       className={cn(
                         "w-6 h-6 flex items-center justify-center p-0 rounded-full text-xs",

@@ -11,7 +11,6 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { mockCustomers } from '@/lib/mock-data';
 import type { Customer } from '@/types';
 import { MoreHorizontal, PlusCircle, Link as LinkIcon, ExternalLink } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -21,11 +20,10 @@ import { useUser } from '@/contexts/user-context';
 
 
 export default function ClientesPage() {
-  const [customers, setCustomers] = useState<Customer[]>(mockCustomers);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const { toast } = useToast();
-  const { currentUser } = useUser();
+  const { customers, addOrUpdateCustomer } = useUser();
 
   const handleOpenDialog = (customer: Customer | null = null) => {
     setEditingCustomer(customer);
@@ -33,38 +31,18 @@ export default function ClientesPage() {
   };
 
   const handleSubmit = (data: CustomerFormValues) => {
-    const updatedData: Partial<Customer> = {
-        name: data.name,
-        phone: data.phone,
-        address: data.addressType === 'manual' ? (data.address || undefined) : undefined,
-        locationLink: data.addressType === 'link' ? (data.locationLink || undefined) : undefined,
-    };
-
-    if (editingCustomer) {
-      setCustomers(customers.map(c => 
-        c.id === editingCustomer.id ? { ...c, ...updatedData } : c
-      ));
-      toast({
-        title: 'Cliente Atualizado!',
-        description: `As informações de ${data.name} foram atualizadas.`,
-      });
-    } else {
-      const newCustomer: Customer = {
-        id: String(Date.now()),
-        name: data.name,
-        phone: data.phone,
-        address: updatedData.address,
-        locationLink: updatedData.locationLink,
-        lastOrderDate: new Date().toISOString().split('T')[0],
-        totalSpent: 0,
-        orderCount: 0,
-      };
-      setCustomers(prev => [...prev, newCustomer]);
-      toast({
-        title: 'Cliente Adicionado!',
-        description: `${data.name} foi adicionado à sua lista de clientes.`,
-      });
-    }
+    addOrUpdateCustomer({
+      id: editingCustomer?.id, // Pass ID if editing
+      name: data.name,
+      phone: data.phone,
+      address: data.addressType === 'manual' ? (data.address || undefined) : undefined,
+      locationLink: data.addressType === 'link' ? (data.locationLink || undefined) : undefined,
+    });
+    
+    toast({
+      title: editingCustomer ? 'Cliente Atualizado!' : 'Cliente Adicionado!',
+      description: `As informações de ${data.name} foram salvas.`,
+    });
   };
 
   return (

@@ -16,6 +16,7 @@ import type { Order, OrderStatus } from '@/types';
 import { cn } from '@/lib/utils';
 import { Clock, User, Tag, ShoppingCart, DollarSign, Bike, Store, MapPin, Link as LinkIcon, MessageSquare, Phone } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { mockProducts } from '@/lib/mock-data';
 
 interface OrderDetailsDialogProps {
   order: Order | null;
@@ -43,12 +44,12 @@ const getStatusBadgeClasses = (status: OrderStatus): string => {
 };
 
 const DetailRow = ({ icon: Icon, label, children }: { icon: LucideIcon; label: string; children: React.ReactNode }) => (
-    <div className="flex flex-col items-start gap-1 sm:grid sm:grid-cols-2 sm:items-center">
-        <div className="flex items-center gap-2 text-muted-foreground">
+    <div className="flex flex-col items-start gap-1 sm:grid sm:grid-cols-3 sm:items-center">
+        <div className="flex items-center col-span-1 gap-2 text-muted-foreground">
             <Icon className="h-4 w-4" />
             <span className="text-sm">{label}</span>
         </div>
-        <div className="font-medium text-foreground/90 pl-6 sm:pl-0 sm:text-right">
+        <div className="font-medium col-span-2 text-foreground/90 pl-6 sm:pl-0 sm:text-right">
             {children}
         </div>
     </div>
@@ -56,6 +57,30 @@ const DetailRow = ({ icon: Icon, label, children }: { icon: LucideIcon; label: s
 
 export function OrderDetailsDialog({ order, open, onOpenChange }: OrderDetailsDialogProps) {
   if (!order) return null;
+
+  const getItemPrice = (itemName: string, itemSize?: string): number => {
+    const isHalfHalf = itemName.startsWith('Meio a Meio:');
+    if (isHalfHalf) {
+        const name1 = itemName.split('/')[0].replace('Meio a Meio:', '').trim();
+        const name2 = itemName.split('/')[1].trim();
+        const product1 = mockProducts.find(p => p.name === name1);
+        const product2 = mockProducts.find(p => p.name === name2);
+        if (product1 && product2 && itemSize && product1.sizes && product2.sizes) {
+            return Math.max(product1.sizes[itemSize] || 0, product2.sizes[itemSize] || 0);
+        }
+    } else {
+        const product = mockProducts.find(p => p.name === itemName);
+        if (product) {
+            if (product.sizes && itemSize) {
+                return product.sizes[itemSize] || 0;
+            }
+            if (product.price) {
+                return product.price;
+            }
+        }
+    }
+    return 0;
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -66,7 +91,7 @@ export function OrderDetailsDialog({ order, open, onOpenChange }: OrderDetailsDi
             Informações completas sobre o pedido.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-6 py-4 max-h-[70vh] sm:max-h-[65vh] overflow-y-auto pr-2 sm:pr-4">
+        <div className="space-y-4 py-4 max-h-[70vh] sm:max-h-[65vh] overflow-y-auto pr-2 sm:pr-4">
           <div className="space-y-3">
              <DetailRow icon={User} label="Cliente">
                 {order.customerName}
@@ -123,17 +148,25 @@ export function OrderDetailsDialog({ order, open, onOpenChange }: OrderDetailsDi
 
           <Separator />
           
-          <div className="space-y-2">
+          <div className="space-y-3">
             <div className="flex items-center gap-2 text-muted-foreground">
                 <ShoppingCart className="h-4 w-4" />
                 <span className="text-sm font-medium">Itens</span>
             </div>
-            <ul className="space-y-1 text-sm list-disc list-inside text-foreground/90 pl-8">
-              {order.items.map((item, index) => (
-                <li key={index}>
-                  <span>{item.quantity}x {item.productName} {item.size && <span className='capitalize'>({item.size})</span>}</span>
-                </li>
-              ))}
+            <ul className="space-y-2 text-sm text-foreground/90 pl-6">
+              {order.items.map((item, index) => {
+                const price = getItemPrice(item.productName, item.size);
+                return (
+                    <li key={index} className="flex justify-between items-baseline">
+                        <div className="flex-1">
+                          <span>{item.quantity}x {item.productName} {item.size && <span className='capitalize'>({item.size})</span>}</span>
+                        </div>
+                        <span className="font-mono text-xs text-muted-foreground text-right pl-2">
+                          {price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        </span>
+                    </li>
+                )
+              })}
             </ul>
           </div>
 

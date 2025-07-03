@@ -1,7 +1,8 @@
 'use client';
 
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import type { UserProfile, UserRole, UserStatus } from '@/types';
+import type { UserProfile, UserRole, UserStatus, Customer } from '@/types';
+import { mockCustomers } from '@/lib/mock-data';
 
 // Mock initial data. In a real app, this might be an empty array.
 const initialUserProfiles: UserProfile[] = [
@@ -20,23 +21,38 @@ export type RegisterResult = {
     message: string;
 };
 
+// Data for adding/updating a customer.
+// If 'id' is present, it's an update.
+// If 'orderTotal' is present, it's an update from a new order.
+export type CustomerData = Partial<Omit<Customer, 'id'>> & {
+  id?: string;
+  orderTotal?: number;
+  name: string;
+  phone: string;
+};
+
+
 interface UserContextType {
   currentUser: UserProfile | null;
   users: UserProfile[];
+  customers: Customer[];
   login: (email: string, pass: string) => LoginResult;
   logout: () => void;
   registerUser: (details: Omit<UserProfile, 'key' | 'status' | 'avatar' | 'fallback'>) => RegisterResult;
   updateUserStatus: (key: string, status: UserStatus) => void;
+  addOrUpdateCustomer: (data: CustomerData) => void;
   isLoading: boolean;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 const USERS_STORAGE_KEY = 'pizzafast-users';
+const CUSTOMERS_STORAGE_KEY = 'pizzafast-customers';
 const CURRENT_USER_STORAGE_KEY = 'currentUserKey';
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [currentUserKey, setCurrentUserKey] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -46,9 +62,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
         if (storedUsers) {
             setUsers(JSON.parse(storedUsers));
         } else {
-            // First time load, seed with initial data
             setUsers(initialUserProfiles);
             localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(initialUserProfiles));
+        }
+        
+        const storedCustomers = localStorage.getItem(CUSTOMERS_STORAGE_KEY);
+        if (storedCustomers) {
+            setCustomers(JSON.parse(storedCustomers));
+        } else {
+            setCustomers(mockCustomers);
+            localStorage.setItem(CUSTOMERS_STORAGE_KEY, JSON.stringify(mockCustomers));
         }
 
         const storedUserKey = localStorage.getItem(CURRENT_USER_STORAGE_KEY);
@@ -58,6 +81,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     } catch (error) {
         console.error("Could not access localStorage.", error);
         setUsers(initialUserProfiles); // fallback
+        setCustomers(mockCustomers);
     } finally {
         setIsLoading(false);
     }
@@ -68,7 +92,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
     try {
       localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
     } catch (error) {
-      console.error("Could not access localStorage.", error);
+      console.error("Could not save users to localStorage.", error);
+    }
+  };
+  
+  const saveCustomers = (updatedCustomers: Customer[]) => {
+    setCustomers(updatedCustomers);
+    try {
+      localStorage.setItem(CUSTOMERS_STORAGE_KEY, JSON.stringify(updatedCustomers));
+    } catch (error) {
+      console.error("Could not save customers to localStorage.", error);
     }
   };
 
@@ -146,9 +179,50 @@ export function UserProvider({ children }: { children: ReactNode }) {
     );
     saveUsers(updatedUsers);
   };
+  
+  const addOrUpdateCustomer = (data: CustomerData) => {
+    setCustomers(prevCustomers => {
+        // Try to find by ID (for edits) or by phone/name (for updates from orders)
+        const existingCustomerIndex = prevCustomers.findIndex(c => 
+            (data.id && c.id === data.id) || 
+            (c.phone && c.phone === data.phone) || 
+            (c.name.toLowerCase() === data.name.toLowerCase())
+        );
+
+        if (existingCustomerIndex > -1) {
+            // Update existing customer
+            const updatedCustomers = [...prevCustomers];
+            const existing = updatedCustomers[existingCustomerIndex];
+            updatedCustomers[existingCustomerIndex] = {
+                ...existing,
+                ...data,
+                totalSpent: existing.totalSpent + (data.orderTotal || 0),
+                orderCount: existing.orderCount + (data.orderTotal ? 1 : 0),
+                lastOrderDate: data.orderTotal ? new Date().toISOString().split('T')[0] : existing.lastOrderDate,
+            };
+            saveCustomers(updatedCustomers);
+            return updatedCustomers;
+        } else {
+            // Add new customer
+            const newCustomer: Customer = {
+                id: String(Date.now()),
+                name: data.name,
+                phone: data.phone,
+                address: data.address,
+                locationLink: data.locationLink,
+                lastOrderDate: new Date().toISOString().split('T')[0],
+                totalSpent: data.orderTotal || 0,
+                orderCount: data.orderTotal ? 1 : 0,
+            };
+            const newCustomers = [...prevCustomers, newCustomer];
+            saveCustomers(newCustomers);
+            return newCustomers;
+        }
+    });
+  };
 
   return (
-    <UserContext.Provider value={{ currentUser, users, login, logout, isLoading, registerUser, updateUserStatus }}>
+    <UserContext.Provider value={{ currentUser, users, customers, login, logout, isLoading, registerUser, updateUserStatus, addOrUpdateCustomer }}>
       {children}
     </UserContext.Provider>
   );

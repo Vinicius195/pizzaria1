@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription }
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { mockProducts } from '@/lib/mock-data';
-import type { Product } from '@/types';
+import type { Product, PizzaSize } from '@/types';
 import { MoreHorizontal, PlusCircle, Search, Pizza } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
@@ -15,6 +15,7 @@ import { AddProductDialog, type ProductFormValues } from '@/components/app/add-p
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useUser } from '@/contexts/user-context';
 import { Input } from '@/components/ui/input';
+import { getMockSettings } from '@/lib/settings-data';
 
 export default function ProdutosPage() {
   const [products, setProducts] = useState<Product[]>(mockProducts);
@@ -24,6 +25,7 @@ export default function ProdutosPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
   const { currentUser } = useUser();
+  const settings = getMockSettings();
 
   if (!currentUser) {
     return null; // Or a skeleton loader
@@ -67,7 +69,7 @@ export default function ProdutosPage() {
           <div className="relative w-full sm:w-auto sm:max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar produto..."
+              placeholder="Buscar produto ou tamanho..."
               className="pl-10"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -94,7 +96,9 @@ export default function ProdutosPage() {
                       <CardContent>
                         {product.sizes ? (
                           <div className="space-y-2">
-                            {Object.entries(product.sizes).map(([size, price]) => (
+                            {Object.entries(product.sizes)
+                               .filter(([size]) => product.category !== 'Pizza' || settings.sizeAvailability[size as PizzaSize])
+                               .map(([size, price]) => (
                               <div key={size} className="flex justify-between items-center text-sm">
                                 <span className="text-muted-foreground capitalize">{size}</span>
                                 <span className="font-semibold">
@@ -286,7 +290,7 @@ export default function ProdutosPage() {
             <div className="relative w-full sm:w-auto sm:max-w-xs">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar produto..."
+                placeholder="Buscar produto ou tamanho..."
                 className="pl-10"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
