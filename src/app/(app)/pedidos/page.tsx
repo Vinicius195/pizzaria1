@@ -197,6 +197,25 @@ function PedidosPageContent() {
     return filteredOrders.filter((order: Order) => order.status === status);
   };
   
+  const getStatusTabClasses = (status: OrderStatus): string => {
+    switch (status) {
+      case 'Recebido':
+        return 'bg-chart-3/10 text-chart-3 data-[state=active]:bg-chart-3 data-[state=active]:text-white';
+      case 'Preparando':
+        return 'bg-chart-4/10 text-chart-4 data-[state=active]:bg-chart-4 data-[state=active]:text-white';
+      case 'Pronto':
+        return 'bg-chart-2/10 text-chart-2 data-[state=active]:bg-chart-2 data-[state=active]:text-white';
+      case 'Em Entrega':
+        return 'bg-primary/10 text-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground';
+      case 'Entregue':
+        return 'bg-slate-400/10 text-slate-600 dark:text-slate-300 data-[state=active]:bg-slate-500 data-[state=active]:text-white';
+      case 'Cancelado':
+        return 'bg-destructive/10 text-destructive data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground';
+      default:
+        return '';
+    }
+  };
+
   function KanbanSkeleton() {
     return (
       <div className="w-full overflow-x-auto pb-4">
@@ -247,10 +266,10 @@ function PedidosPageContent() {
       
       {isManager ? (
         <Tabs defaultValue={defaultValue} className="w-full">
-            <TabsList className="h-auto flex-wrap">
-                <TabsTrigger value="Todos">Todos</TabsTrigger>
+            <TabsList className="h-auto flex-wrap gap-1">
+                <TabsTrigger value="Todos" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">Todos</TabsTrigger>
                 {orderStatuses.map(status => (
-                    <TabsTrigger key={status} value={status}>{status}</TabsTrigger>
+                    <TabsTrigger key={status} value={status} className={cn('font-semibold', getStatusTabClasses(status))}>{status}</TabsTrigger>
                 ))}
             </TabsList>
             <TabsContent value="Todos" className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

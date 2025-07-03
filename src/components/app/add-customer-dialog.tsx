@@ -62,14 +62,24 @@ export function AddCustomerDialog({ open, onOpenChange, onSubmit, customer }: Ad
 
   useEffect(() => {
     if (open) {
-      const initialAddressType = customer?.locationLink ? 'link' : 'manual';
-      form.reset({
-        name: customer?.name || '',
-        phone: customer?.phone || '',
-        addressType: initialAddressType,
-        address: customer?.address || '',
-        locationLink: customer?.locationLink || '',
-      });
+      if (customer) {
+        const initialAddressType = customer.locationLink ? 'link' : 'manual';
+        form.reset({
+          name: customer.name || '',
+          phone: customer.phone || '',
+          addressType: initialAddressType,
+          address: customer.address || '',
+          locationLink: customer.locationLink || '',
+        });
+      } else {
+        form.reset({
+          name: '',
+          phone: '',
+          addressType: 'manual',
+          address: '',
+          locationLink: '',
+        });
+      }
     }
   }, [customer, open, form]);
 
@@ -135,8 +145,11 @@ export function AddCustomerDialog({ open, onOpenChange, onSubmit, customer }: Ad
                       <RadioGroup
                         onValueChange={(value) => {
                           field.onChange(value);
-                          form.setValue('address', '');
-                          form.setValue('locationLink', '');
+                          if (value === 'link') {
+                            form.setValue('address', customer?.address || '');
+                          } else {
+                            form.setValue('locationLink', customer?.locationLink || '');
+                          }
                         }}
                         defaultValue={field.value}
                         className="flex space-x-4"
