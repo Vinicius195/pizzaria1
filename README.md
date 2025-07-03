@@ -4,39 +4,19 @@ This is a NextJS starter in Firebase Studio.
 
 To get started, take a look at src/app/page.tsx.
 
-## Supabase Schema
+## Supabase Schema Setup
 
-To use this application with Supabase, you need to create the following tables and policies in your Supabase project. You can run this SQL code in the Supabase SQL Editor.
+To use this application, you need to configure your Supabase project. Follow these steps in your Supabase dashboard.
+
+### 1. Enable Row Level Security (RLS)
+
+Before running any SQL, ensure that Row Level Security is enabled for all tables you will create. You can usually find this setting in your project's authentication or API settings.
+
+### 2. Run the SQL Schema Script
+
+Go to the **SQL Editor** in your Supabase dashboard and run the following script. This will create all the necessary tables and policies for the application to function correctly.
 
 ```sql
--- 1. Enable RLS on all tables in your project settings.
--- 2. After creating the tables, set up a trigger to sync new users to the profiles table.
---    Go to Database > Triggers and create a new trigger on the `auth.users` table for the `INSERT` event.
---    The function to run should be:
---    `public.handle_new_user()`
---    And the function definition is:
-/*
-create function public.handle_new_user()
-returns trigger
-language plpgsql
-security definer set search_path = public
-as $$
-begin
-  insert into public.profiles (id, name, email, role, status, fallback)
-  values (
-    new.id,
-    new.raw_user_meta_data->>'name',
-    new.email,
-    new.raw_user_meta_data->>'role',
-    'Pendente',
-    SUBSTRING(new.raw_user_meta_data->>'name' FROM 1 FOR 1)
-  );
-  return new;
-end;
-$$;
-*/
-
-
 -- Profiles table to store public user data
 CREATE TABLE public.profiles (
   id uuid NOT NULL REFERENCES auth.users ON DELETE CASCADE,
@@ -146,3 +126,42 @@ VALUES (
   '{"GG": true, "medio": true, "grande": true, "pequeno": true}'
 );
 ```
+
+### 3. Create the User Profile Sync Function
+
+Go to **Database** > **Functions** and create a new function called `handle_new_user`. Use the code below for its definition. This function automatically creates a profile for a new user upon registration.
+
+```sql
+-- Function to create a new profile when a user signs up.
+create function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  insert into public.profiles (id, name, email, role, status, fallback)
+  values (
+    new.id,
+    new.raw_user_meta_data->>'name',
+    new.email,
+    new.raw_user_meta_data->>'role',
+    'Pendente',
+    SUBSTRING(new.raw_user_meta_data->>'name' FROM 1 FOR 1)
+  );
+  return new;
+end;
+$$;
+```
+> **Note**: When creating via the UI, set the "Return type" to `trigger` and "Language" to `plpgsql`. The function body goes in the "Definition" field. Under "Advanced Settings", set "Security" to `DEFINER`.
+
+### 4. Create the Trigger
+
+Finally, create a trigger to execute the function whenever a new user is added to the authentication system.
+Go to **Database** > **Triggers** and create a new trigger with the following settings:
+- **Name**: `on_auth_user_created`
+- **Table**: `users` (in the `auth` schema)
+- **Events**: `INSERT`
+- **Trigger Type**: `After`
+- **Function**: `handle_new_user`
+
+After these steps, your Supabase backend will be fully configured to work with the application.
