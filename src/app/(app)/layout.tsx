@@ -8,6 +8,7 @@ import { useUser } from '@/contexts/user-context';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Assistant } from '@/components/app/assistant';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { currentUser, isLoading } = useUser();
@@ -52,6 +53,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             </main>
           </div>
         </SidebarInset>
+        <Assistant />
       </div>
     </SidebarProvider>
   );
