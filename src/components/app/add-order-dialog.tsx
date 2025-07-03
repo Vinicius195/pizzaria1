@@ -26,11 +26,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { mockProducts } from '@/lib/mock-data';
-import type { Product, PizzaSize } from '@/types';
+import type { Order, Product, PizzaSize } from '@/types';
 import { Check, ChevronsUpDown, Link, Phone, PlusCircle, Trash2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -147,14 +147,16 @@ export type AddOrderFormValues = z.infer<typeof addOrderSchema>;
 interface AddOrderDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAddOrder: (data: AddOrderFormValues) => void;
+  onSubmit: (data: AddOrderFormValues) => void;
+  order?: Order | null;
 }
 
-export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialogProps) {
+export function AddOrderDialog({ open, onOpenChange, onSubmit, order }: AddOrderDialogProps) {
   const [openProductCombobox, setOpenProductCombobox] = useState<number | null>(null);
   const [openProduct2Combobox, setOpenProduct2Combobox] = useState<number | null>(null);
   const { currentUser } = useUser();
   const isManager = currentUser?.role === 'Administrador';
+  const isEditMode = !!order;
 
   const form = useForm<AddOrderFormValues>({
     resolver: zodResolver(addOrderSchema),
@@ -195,13 +197,69 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
     {} as Record<Product['category'], Product[]>
   );
 
+  useEffect(() => {
+    if (open) {
+      if (isEditMode && order) {
+        const formItems = order.items.map(item => {
+            const isHalfHalf = item.productName.startsWith('Meio a Meio:');
+            let productId = '';
+            let product2Id: string | undefined = undefined;
+
+            if (isHalfHalf) {
+                const names = item.productName.replace('Meio a Meio:', '').split('/').map(s => s.trim());
+                const product1 = availablePizzas.find(p => p.name === names[0]);
+                const product2 = availablePizzas.find(p => p.name === names[1]);
+                productId = product1?.id || '';
+                product2Id = product2?.id || undefined;
+            } else {
+                const product = availableProducts.find(p => p.name === item.productName);
+                productId = product?.id || '';
+            }
+
+            return {
+                productId,
+                product2Id,
+                isHalfHalf,
+                quantity: item.quantity,
+                size: item.size,
+            };
+        });
+
+        const addressType = order.locationLink ? 'link' : 'manual';
+
+        form.reset({
+            customerName: order.customerName,
+            customerPhone: order.customerPhone || '',
+            orderType: order.orderType,
+            address: order.address || '',
+            locationLink: order.locationLink || '',
+            addressType,
+            notes: order.notes || '',
+            items: formItems.length > 0 ? formItems : [{ productId: '', product2Id: undefined, isHalfHalf: false, quantity: 1, size: undefined }],
+        });
+
+      } else {
+        form.reset({
+          customerName: '',
+          customerPhone: '',
+          orderType: 'retirada',
+          items: [{ productId: '', product2Id: undefined, isHalfHalf: false, quantity: 1, size: undefined }],
+          addressType: 'manual',
+          address: '',
+          locationLink: '',
+          notes: '',
+        });
+      }
+    }
+  }, [order, open, form, isEditMode, availableProducts, availablePizzas]);
+
+
   const handleClose = () => {
-    form.reset();
     onOpenChange(false);
   }
 
-  function onSubmit(data: AddOrderFormValues) {
-    onAddOrder(data);
+  function handleFormSubmit(data: AddOrderFormValues) {
+    onSubmit(data);
     handleClose();
   }
 
@@ -209,13 +267,13 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Adicionar Novo Pedido</DialogTitle>
+          <DialogTitle>{isEditMode ? `Editar Pedido #${order.id}` : 'Adicionar Novo Pedido'}</DialogTitle>
           <DialogDescription>
-            Preencha os detalhes abaixo para criar um novo pedido.
+            {isEditMode ? 'Altere os detalhes do pedido abaixo.' : 'Preencha os detalhes abaixo para criar um novo pedido.'}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
             <div className="space-y-6 max-h-[70vh] sm:max-h-[60vh] overflow-y-auto p-1 pr-4">
                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
@@ -634,7 +692,7 @@ export function AddOrderDialog({ open, onOpenChange, onAddOrder }: AddOrderDialo
               <DialogClose asChild>
                 <Button type="button" variant="ghost">Cancelar</Button>
               </DialogClose>
-              <Button type="submit">Salvar Pedido</Button>
+              <Button type="submit">{isEditMode ? 'Salvar Alterações' : 'Salvar Pedido'}</Button>
             </DialogFooter>
           </form>
         </Form>

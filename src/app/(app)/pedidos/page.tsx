@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { orderStatuses, mockProducts } from '@/lib/mock-data';
 import type { Order, OrderStatus } from '@/types';
-import { Clock, PlusCircle, Bike, MoreHorizontal, Search, MessageSquare, ChefHat, Pizza as PizzaIcon, Package, Trash2 } from 'lucide-react';
+import { Clock, PlusCircle, Bike, MoreHorizontal, Search, MessageSquare, ChefHat, Pizza as PizzaIcon, Package, Trash2, Edit } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AddOrderDialog, type AddOrderFormValues } from '@/components/app/add-order-dialog';
 import { OrderDetailsDialog } from '@/components/app/order-details-dialog';
@@ -42,12 +42,14 @@ function OrderCard({
   order, 
   onAdvanceStatus, 
   onViewDetails,
-  onCancelOrder
+  onCancelOrder,
+  onEditOrder
 }: { 
   order: Order; 
   onAdvanceStatus: (orderId: string) => void; 
   onViewDetails: (order: Order) => void; 
   onCancelOrder: (orderId: string) => void; 
+  onEditOrder: (order: Order) => void;
 }) {
   const { currentUser } = useUser();
   const isManager = currentUser?.role === 'Administrador';
@@ -129,6 +131,13 @@ function OrderCard({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem
+                onClick={() => onEditOrder(order)}
+                disabled={isActionDisabled}
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                Editar Pedido
+              </DropdownMenuItem>
+              <DropdownMenuItem
                 onClick={() => onAdvanceStatus(order.id)}
                 disabled={isActionDisabled}
               >
@@ -167,7 +176,8 @@ function PedidosPageContent() {
     currentUser, 
     orders, 
     advanceOrderStatus, 
-    addOrder, 
+    addOrder,
+    updateOrder,
     cancelOrder,
     deleteAllOrders,
   } = useUser();
@@ -175,7 +185,8 @@ function PedidosPageContent() {
   const isMobile = useIsMobile();
   const statusFilter = searchParams.get('status');
   
-  const [isAddOrderDialogOpen, setIsAddOrderDialogOpen] = useState(false);
+  const [isOrderDialogOpen, setIsOrderDialogOpen] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isClearAllDialogOpen, setIsClearAllDialogOpen] = useState(false);
@@ -192,9 +203,36 @@ function PedidosPageContent() {
     setSelectedOrder(order);
   };
   
+  const handleOpenAddDialog = () => {
+    setEditingOrder(null);
+    setIsOrderDialogOpen(true);
+  };
+  
+  const handleOpenEditDialog = (order: Order) => {
+    setEditingOrder(order);
+    setIsOrderDialogOpen(true);
+  };
+
+  const handleSubmitOrder = (data: AddOrderFormValues) => {
+    if (editingOrder) {
+      updateOrder(editingOrder.id, data);
+    } else {
+      addOrder(data);
+    }
+    setIsOrderDialogOpen(false);
+    setEditingOrder(null);
+  };
+  
   const handleClearAllOrders = () => {
     deleteAllOrders();
     setIsClearAllDialogOpen(false);
+  };
+
+  const handleDialogClose = (open: boolean) => {
+    if (!open) {
+      setEditingOrder(null);
+    }
+    setIsOrderDialogOpen(open);
   };
 
   const filteredOrders = orders.filter(order =>
@@ -243,9 +281,10 @@ function PedidosPageContent() {
   return (
     <>
       <AddOrderDialog 
-        open={isAddOrderDialogOpen} 
-        onOpenChange={setIsAddOrderDialogOpen}
-        onAddOrder={addOrder}
+        open={isOrderDialogOpen} 
+        onOpenChange={handleDialogClose}
+        onSubmit={handleSubmitOrder}
+        order={editingOrder}
       />
       <OrderDetailsDialog 
         order={selectedOrder}
@@ -282,7 +321,7 @@ function PedidosPageContent() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <Button onClick={() => setIsAddOrderDialogOpen(true)}>
+          <Button onClick={handleOpenAddDialog}>
             <PlusCircle className="mr-2 h-4 w-4" />
             Adicionar Pedido
           </Button>
@@ -306,11 +345,12 @@ function PedidosPageContent() {
             <TabsContent value="Todos" className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filteredOrders.map(order => (
                 <OrderCard 
-                key={order.id} 
-                order={order} 
-                onAdvanceStatus={advanceOrderStatus} 
-                onViewDetails={handleViewDetails}
-                onCancelOrder={cancelOrder}
+                  key={order.id} 
+                  order={order} 
+                  onAdvanceStatus={advanceOrderStatus} 
+                  onViewDetails={handleViewDetails}
+                  onCancelOrder={cancelOrder}
+                  onEditOrder={handleOpenEditDialog}
                 />
             ))}
             </TabsContent>
@@ -323,6 +363,7 @@ function PedidosPageContent() {
                     onAdvanceStatus={advanceOrderStatus} 
                     onViewDetails={handleViewDetails}
                     onCancelOrder={cancelOrder}
+                    onEditOrder={handleOpenEditDialog}
                 />
                 ))}
             </TabsContent>
@@ -365,6 +406,7 @@ function PedidosPageContent() {
                         onAdvanceStatus={advanceOrderStatus}
                         onViewDetails={handleViewDetails}
                         onCancelOrder={cancelOrder}
+                        onEditOrder={handleOpenEditDialog}
                       />
                     ))
                   ) : (
@@ -398,6 +440,7 @@ function PedidosPageContent() {
                                           onAdvanceStatus={advanceOrderStatus}
                                           onViewDetails={handleViewDetails}
                                           onCancelOrder={cancelOrder}
+                                          onEditOrder={handleOpenEditDialog}
                                       />
                                   ))
                               ) : (

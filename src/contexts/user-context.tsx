@@ -53,6 +53,7 @@ interface UserContextType {
   markAllNotificationsAsRead: () => void;
   advanceOrderStatus: (orderId: string) => void;
   addOrder: (data: AddOrderFormValues) => void;
+  updateOrder: (orderId: string, data: AddOrderFormValues) => void;
   cancelOrder: (orderId: string) => void;
   deleteAllOrders: () => void;
 }
@@ -488,6 +489,83 @@ export function UserProvider({ children }: { children: ReactNode }) {
     });
   };
   
+  const updateOrder = (orderId: string, data: AddOrderFormValues) => {
+    const orderToUpdate = orders.find(o => o.id === orderId);
+    if (!orderToUpdate) {
+        toast({
+            variant: "destructive",
+            title: "Erro ao Atualizar",
+            description: `Pedido #${orderId} não encontrado.`,
+        });
+        return;
+    }
+
+    const orderItemsWithDetails = data.items.map(item => {
+        const product1 = mockProducts.find(p => p.id === item.productId);
+        if (!product1) return null;
+
+        if (item.isHalfHalf && item.size) {
+            const product2 = mockProducts.find(p => p.id === item.product2Id);
+            if (!product2) return null;
+
+            const price1 = product1.sizes?.[item.size] ?? 0;
+            const price2 = product2.sizes?.[item.size] ?? 0;
+            const finalPrice = Math.max(price1, price2);
+
+            return {
+                productName: `Meio a Meio: ${product1.name} / ${product2.name}`,
+                quantity: item.quantity,
+                size: item.size,
+                price: finalPrice,
+            };
+        }
+        
+        const price = (product1.sizes && item.size) 
+            ? product1.sizes[item.size] || 0
+            : product1.price || 0;
+
+        return {
+            productName: product1.name,
+            quantity: item.quantity,
+            size: item.size,
+            price: price,
+        };
+    }).filter((item): item is NonNullable<typeof item> => item !== null);
+
+    const total = orderItemsWithDetails.reduce((acc, item) => acc + (item!.price * item!.quantity), 0);
+
+    const updatedOrderData: Omit<Order, 'id' | 'status' | 'timestamp'> = {
+        customerName: data.customerName,
+        customerPhone: data.customerPhone,
+        items: orderItemsWithDetails.map(({ productName, quantity, size }) => ({ productName, quantity, size })),
+        total,
+        orderType: data.orderType,
+        address: data.address,
+        locationLink: data.locationLink,
+        notes: data.notes,
+    };
+
+    const updatedOrders = orders.map(o => 
+        o.id === orderId 
+        ? { ...o, ...updatedOrderData } 
+        : o
+    );
+
+    saveOrders(updatedOrders);
+
+    toast({
+      title: "Pedido Atualizado!",
+      description: `O pedido #${orderId} foi atualizado com sucesso.`,
+    });
+
+    addNotification({
+        title: `Pedido #${orderId} Atualizado`,
+        description: `O pedido de ${data.customerName} foi modificado.`,
+        targetRoles: ['Administrador', 'Funcionário'],
+        link: '/pedidos'
+    });
+  };
+
   const cancelOrder = (orderId: string) => {
     const orderToCancel = orders.find(o => o.id === orderId);
     if (!orderToCancel || orderToCancel.status === 'Cancelado' || orderToCancel.status === 'Entregue') return;
@@ -555,6 +633,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       markAllNotificationsAsRead,
       advanceOrderStatus,
       addOrder,
+      updateOrder,
       cancelOrder,
       deleteAllOrders,
     }}>
