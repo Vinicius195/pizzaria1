@@ -356,7 +356,7 @@ function PedidosPageContent() {
       
       {isManager ? (
         <Tabs defaultValue={defaultValue} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 md:grid-cols-7">
+            <TabsList className="h-auto flex-wrap">
                 <TabsTrigger value="Todos">Todos</TabsTrigger>
                 {orderStatuses.map(status => (
                     <TabsTrigger key={status} value={status}>{status}</TabsTrigger>
@@ -392,17 +392,15 @@ function PedidosPageContent() {
           {isMobile === undefined && <KanbanSkeleton />}
           {isMobile === true && (
             <Tabs defaultValue={kanbanStatuses[0].status} className="w-full">
-              <TabsList className="grid w-full grid-cols-3 bg-transparent p-0 border-b">
+              <TabsList className="grid w-full grid-cols-3 bg-transparent p-0 border-b gap-1">
                 {kanbanStatuses.map(({ status, icon: Icon }) => (
                   <TabsTrigger
                     key={status}
                     value={status}
-                    className="flex flex-col h-auto p-2 gap-2 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-primary/5 data-[state=active]:shadow-none"
+                    className="flex flex-col h-auto p-2 gap-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-primary/5 data-[state=active]:shadow-none"
                   >
-                    <div className="flex items-center gap-2">
-                      <Icon className="h-5 w-5" />
-                      <span className="font-semibold hidden sm:inline">{status}</span>
-                    </div>
+                    <Icon className="h-5 w-5" />
+                    <span className="text-xs font-semibold">{status}</span>
                     <Badge
                       className={cn(
                         "w-6 h-6 flex items-center justify-center p-0 rounded-full text-xs",
