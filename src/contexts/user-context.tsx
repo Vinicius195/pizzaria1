@@ -235,7 +235,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
   // --- Auth Functions ---
   const login = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return { success: false, message: 'Email ou senha inválidos.' };
+    if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+            return { success: false, message: 'Email ou senha inválidos. Por favor, verifique seus dados.' };
+        }
+        return { success: false, message: 'Ocorreu um erro ao tentar fazer login. Tente novamente.' };
+    }
     
     if (data.user) {
       const { data: profile, error: profileError } = await supabase.from('profiles').select('status').eq('id', data.user.id).single();
@@ -263,8 +268,19 @@ export function UserProvider({ children }: { children: ReactNode }) {
         },
       },
     });
-    if (error) return { success: false, message: error.message };
-    if (!authData.user) return { success: false, message: 'Não foi possível criar o usuário.' };
+
+    if (error) {
+      console.error('Supabase registration error:', error.message);
+      if (error.message.includes('User already registered')) {
+        return { success: false, message: 'Este endereço de e-mail já está cadastrado. Por favor, tente fazer login.' };
+      }
+      if (error.message.includes('valid email')) {
+        return { success: false, message: 'O endereço de e-mail fornecido não parece ser válido.' };
+      }
+      return { success: false, message: 'Ocorreu um erro inesperado durante o cadastro. Por favor, tente novamente.' };
+    }
+
+    if (!authData.user) return { success: false, message: 'Não foi possível criar o usuário. Tente novamente.' };
 
     await createNotification({
       title: 'Novo Usuário Registrado',
@@ -600,4 +616,5 @@ export const useUser = () => {
   return context;
 };
 
+    
     
