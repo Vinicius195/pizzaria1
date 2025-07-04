@@ -428,6 +428,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const { data: insertedOrder, error } = await supabase.from('orders').insert(newOrder).select().single();
     
     if (!error && insertedOrder) {
+      setOrders(prev => [insertedOrder, ...prev].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
       // After successfully adding order, update or create customer
       const { data: existingCustomer } = await supabase.from('customers').select('*').eq('name', data.customerName).single();
 
@@ -473,9 +474,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
       items: formattedItems as any,
     };
 
+    setOrders(prev => prev.map(o => o.id === orderId ? {...o, ...updatedOrder} : o));
+
     const { error } = await supabase.from('orders').update(updatedOrder).eq('id', orderId);
-    if (error) console.error("Error updating order:", error);
-    else {
+    if (error) {
+        console.error("Error updating order:", error);
+        fetchAllData(currentUser!); // Re-fetch to rollback optimistic update
+    } else {
       if (!currentUser) return;
       await createNotification({
         title: 'Pedido Modificado',
@@ -494,21 +499,33 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const currentIndex = statusFlow.indexOf(order.status as OrderStatus);
     if (currentIndex < statusFlow.length - 1) {
       const newStatus = statusFlow[currentIndex + 1];
+      setOrders(prev => prev.map(o => o.id === orderId ? {...o, status: newStatus} : o));
       const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
-      if (error) console.error("Error advancing order status:", error);
+      if (error) {
+        console.error("Error advancing order status:", error);
+        fetchAllData(currentUser!); // Re-fetch to rollback optimistic update
+      }
     }
   };
 
   const cancelOrder = async (orderId: number) => {
+    setOrders(prev => prev.map(o => o.id === orderId ? {...o, status: 'Cancelado'} : o));
     const { error } = await supabase.from('orders').update({ status: 'Cancelado' }).eq('id', orderId);
-    if (error) console.error("Error canceling order:", error);
+    if (error) {
+      console.error("Error canceling order:", error);
+      fetchAllData(currentUser!); // Re-fetch to rollback optimistic update
+    }
   };
   
   const deleteAllOrders = async () => {
     if (!currentUser || currentUser.role !== 'Administrador') return;
+    const oldOrders = orders;
+    setOrders([]);
     const { error } = await supabase.from('orders').delete().neq('id', 0); // trick to delete all rows
-    if (error) console.error("Error deleting all orders:", error);
-    else {
+    if (error) {
+        console.error("Error deleting all orders:", error);
+        setOrders(oldOrders);
+    } else {
         await createNotification({
             title: 'Histórico de Pedidos Apagado',
             description: `${currentUser.name} limpou todos os pedidos do sistema.`,
@@ -538,8 +555,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
         insertData.price = data.price;
     }
 
-    const { error } = await supabase.from('products').insert(insertData);
-    if (error) console.error("Error adding product:", error);
+    const { data: insertedProduct, error } = await supabase.from('products').insert(insertData).select().single();
+    if (error) {
+        console.error("Error adding product:", error);
+    } else if (insertedProduct) {
+        setProducts(prev => [...prev, insertedProduct].sort((a,b) => a.name.localeCompare(b.name)));
+    }
   };
   
   const updateProduct = async (productId: string, data: ProductFormValues) => {
@@ -560,62 +581,106 @@ export function UserProvider({ children }: { children: ReactNode }) {
     } else if (data.category === 'Adicional' && data.price) {
         updateData.price = data.price;
     }
+    
+    setProducts(prev => prev.map(p => p.id === productId ? {...p, ...updateData} : p));
+
     const { error } = await supabase.from('products').update(updateData).eq('id', productId);
-    if (error) console.error("Error updating product:", error);
+    if (error) {
+        console.error("Error updating product:", error);
+        fetchAllData(currentUser!);
+    }
   };
 
   const deleteProduct = async (productId: string) => {
+    const oldProducts = products;
+    setProducts(prev => prev.filter(p => p.id !== productId));
     const { error } = await supabase.from('products').delete().eq('id', productId);
-    if (error) console.error("Error deleting product:", error);
+    if (error) {
+        console.error("Error deleting product:", error);
+        setProducts(oldProducts);
+    }
   };
 
   const toggleProductAvailability = async (productId: string, isAvailable: boolean) => {
+    setProducts(prev => prev.map(p => p.id === productId ? {...p, isAvailable} : p));
     const { error } = await supabase.from('products').update({ isAvailable }).eq('id', productId);
-    if (error) console.error("Error toggling product availability:", error);
+    if (error) {
+        console.error("Error toggling product availability:", error);
+        fetchAllData(currentUser!);
+    }
   };
 
   // --- Customer Functions ---
   const addOrUpdateCustomer = async (data: Partial<Customer>) => {
     if (data.id) { // Update existing customer
+        const oldCustomers = customers;
+        setCustomers(prev => prev.map(c => c.id === data.id ? {...c, ...data} : c));
         const { error } = await supabase.from('customers').update({
             name: data.name,
             phone: data.phone ?? null,
             address: data.address ?? null,
             locationLink: data.locationLink ?? null,
         }).eq('id', data.id);
-        if (error) console.error("Error updating customer:", error);
+        if (error) {
+            console.error("Error updating customer:", error);
+            setCustomers(oldCustomers);
+        }
     } else { // Add new customer, created via the customer page
-        const { error } = await supabase.from('customers').insert({
+        const { data: insertedCustomer, error } = await supabase.from('customers').insert({
             name: data.name!,
             phone: data.phone ?? null,
             address: data.address ?? null,
             locationLink: data.locationLink ?? null,
-        });
-        if (error) console.error("Error adding customer:", error);
+        }).select().single();
+
+        if (error) {
+            console.error("Error adding customer:", error);
+        } else if (insertedCustomer) {
+            setCustomers(prev => [...prev, insertedCustomer].sort((a, b) => a.name.localeCompare(b.name)));
+        }
     }
   };
   
   const deleteCustomer = async (customerId: string) => {
+    const oldCustomers = customers;
+    setCustomers(prev => prev.filter(c => c.id !== customerId));
     const { error } = await supabase.from('customers').delete().eq('id', customerId);
-    if (error) console.error("Error deleting customer:", error);
+    if (error) {
+        console.error("Error deleting customer:", error);
+        setCustomers(oldCustomers);
+    }
   };
 
   // --- Settings Functions ---
   const updateSettings = async (data: PizzaSettings) => {
+    const oldSettings = settings;
+    setSettings(prev => ({...prev!, ...data}));
     const { error } = await supabase.from('settings').update({ basePrices: data.basePrices, sizeAvailability: data.sizeAvailability }).eq('id', 1);
-    if (error) console.error("Error updating settings:", error);
+    if (error) {
+        console.error("Error updating settings:", error);
+        setSettings(oldSettings);
+    }
   };
 
   // --- Notification Functions ---
   const markNotificationAsRead = async (notificationId: string) => {
+    setNotifications(prev => prev.map(n => n.id === notificationId ? {...n, isRead: true} : n));
     const { error } = await supabase.from('notifications').update({ isRead: true }).eq('id', notificationId);
-    if (error) console.error("Error marking notification as read:", error);
+    if (error) {
+        console.error("Error marking notification as read:", error);
+        fetchAllData(currentUser!);
+    }
   };
   
   const markAllNotificationsAsRead = async () => {
     if (!currentUser) return;
+    const oldNotifications = notifications;
+    setNotifications(prev => prev.map(n => ({...n, isRead: true})));
     const { error } = await supabase.from('notifications').update({ isRead: true }).contains('targetRoles', [currentUser.role]);
-    if (error) console.error("Error marking all notifications as read:", error);
+    if (error) {
+        console.error("Error marking all notifications as read:", error);
+        setNotifications(oldNotifications);
+    }
   };
 
   const value: UserContextType = {
