@@ -153,7 +153,7 @@ begin
 end;
 $$;
 ```
-> **Note**: When creating via the UI, set the "Return type" to `trigger` and "Language" to `plpgsql`. The function body goes in the "Definition" field. Under "Advanced Settings", set "Security" to `DEFINER`.
+> **Note**: When creating via the UI, set the "Return type" to `trigger` and "Language" to `plpgsql`. The "Behavior" can be left as the default `VOLATILE`. The function body goes in the "Definition" field. Under "Advanced Settings", set "Security" to `DEFINER`.
 
 Now, create a trigger to execute the function. Go to **Database** > **Triggers** and create a new trigger with the following settings:
 - **Name**: `on_auth_user_created`
@@ -186,7 +186,7 @@ begin
 end;
 $$;
 ```
-> **Note**: Just like before, set the "Return type" to `trigger`, "Language" to `plpgsql`, and "Security" to `DEFINER`.
+> **Note**: Just like before, set the "Return type" to `trigger`, "Language" to `plpgsql`, "Behavior" to `VOLATILE` (default), and "Security" to `DEFINER`.
 
 Next, create the trigger. Go to **Database** > **Triggers** and create a new trigger with these settings:
 - **Name**: `on_profile_created`
