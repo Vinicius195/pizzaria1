@@ -157,7 +157,7 @@ $$;
 
 Now, create a trigger to execute the function. Go to **Database** > **Triggers** and create a new trigger with the following settings:
 - **Name**: `on_auth_user_created`
-- **Table**: `users` (in the `auth` schema)
+- **Table**: `users` (in the `auth` schema). **Important:** You will need to switch from the `public` schema to the `auth` schema in the table selector dropdown to find the `users` table.
 - **Events**: `INSERT`
 - **Trigger Type**: `After`
 - **Function**: `handle_new_user`
@@ -194,5 +194,15 @@ Next, create the trigger. Go to **Database** > **Triggers** and create a new tri
 - **Events**: `INSERT`
 - **Trigger Type**: `After`
 - **Function**: `create_new_user_notification`
+
+### 5. (Optional but Recommended) Disable Email Confirmation
+
+For the registration flow to be as smooth as possible, it is recommended to disable the "Confirm email" feature in your Supabase project.
+
+1.  Go to **Authentication** -> **Providers**.
+2.  Find the **Email** provider and click the three dots to select **Edit**.
+3.  Turn **OFF** the toggle for "Confirm email".
+4.  Click **Save**.
+
 
 After these steps, your Supabase backend will be fully configured to work with the application.

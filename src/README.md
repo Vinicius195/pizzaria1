@@ -157,7 +157,7 @@ $$;
 
 Now, create a trigger to execute the function. Go to **Database** > **Triggers** and create a new trigger with the following settings:
 - **Name**: `on_auth_user_created`
-- **Table**: `users` (in the `auth` schema)
+- **Table**: `users` (in the `auth` schema). **Important:** You will need to switch from the `public` schema to the `auth` schema in the table selector dropdown to find the `users` table.
 - **Events**: `INSERT`
 - **Trigger Type**: `After`
 - **Function**: `handle_new_user`
