@@ -174,7 +174,19 @@ create or replace trigger on_profile_created
 
 ```
 
-### 3. (Optional but Recommended) Disable Email Confirmation
+### 3. Approve the First Administrator Account
+
+The very first user account (likely your own administrator account) is created with a "Pending" status. You must manually approve it to log in for the first time.
+
+1.  In the Supabase dashboard, go to the **Table Editor** (table icon).
+2.  Select the **`profiles`** table.
+3.  Find your user row. The `status` column will say `Pendente`.
+4.  Double-click the `Pendente` cell and change its value to **`Aprovado`**.
+5.  Click **Save**.
+
+You can now log in to the application. All subsequent users can be approved from the "Configurações" page within the app itself.
+
+### 4. (Optional but Recommended) Disable Email Confirmation
 
 For the registration flow to be as smooth as possible, it is recommended to disable the "Confirm email" feature in your Supabase project.
 
