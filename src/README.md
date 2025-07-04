@@ -32,7 +32,7 @@ CREATE TABLE public.profiles (
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public profiles are viewable by authenticated users." ON public.profiles FOR SELECT TO authenticated USING (true);
 CREATE POLICY "Users can update own profile." ON public.profiles FOR UPDATE USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
-CREATE POLICY "Admins can update any profile." ON public.profiles FOR UPDATE TO authenticated USING (((SELECT role FROM public.profiles WHERE id = auth.uid()) = 'Administrador');
+CREATE POLICY "Admins can update any profile." ON public.profiles FOR UPDATE TO authenticated USING ((SELECT role FROM public.profiles WHERE id = auth.uid()) = 'Administrador');
 CREATE POLICY "Admins can delete profiles." ON public.profiles FOR DELETE TO authenticated USING (((SELECT role FROM public.profiles WHERE id = auth.uid()) = 'Administrador') AND (auth.uid() <> id));
 
 -- Products table
