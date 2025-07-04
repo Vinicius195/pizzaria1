@@ -158,15 +158,29 @@ export function UserProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
-        await fetchAllData(session.user);
+        // Check if user is already being loaded to avoid multiple fetches
+        if (!isLoading) {
+            await fetchAllData(session.user);
+        }
       } else {
         setCurrentUser(null);
         setIsLoading(false);
       }
     });
+    
+    // Check for existing session on initial load
+    async function getInitialSession() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        await fetchAllData(session.user);
+      } else {
+        setIsLoading(false);
+      }
+    }
+    getInitialSession();
 
     return () => authListener.subscription.unsubscribe();
-  }, [fetchAllData]);
+  }, [fetchAllData, isLoading]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -174,7 +188,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     // Real-time subscriptions
     const ordersChannel = supabase.channel('orders-channel')
       .on<Order>('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, payload => {
-        if (payload.eventType === 'INSERT') setOrders(prev => [payload.new, ...prev]);
+        if (payload.eventType === 'INSERT') setOrders(prev => [payload.new, ...prev].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
         if (payload.eventType === 'UPDATE') setOrders(prev => prev.map(o => o.id === payload.new.id ? payload.new : o));
         if (payload.eventType === 'DELETE') setOrders(prev => prev.filter(o => o.id !== (payload.old as any).id));
       }).subscribe();
@@ -198,7 +212,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
             if (payload.eventType === 'INSERT') setUsers(prev => [...prev, payload.new]);
             if (payload.eventType === 'UPDATE') {
                 setUsers(prev => prev.map(u => u.id === payload.new.id ? payload.new : u));
-                if (payload.new.id === currentUser.id) setCurrentUser(payload.new);
+                if (currentUser && payload.new.id === currentUser.id) setCurrentUser(payload.new);
             }
             if (payload.eventType === 'DELETE') setUsers(prev => prev.filter(u => u.id !== (payload.old as any).id));
         }).subscribe();
@@ -208,8 +222,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
         if (payload.eventType === 'INSERT') {
           const newNotification = payload.new;
           // Check if current user should receive it
-          if (newNotification.targetRoles && (newNotification.targetRoles as unknown as string[]).includes(currentUser.role as string)) {
-            setNotifications(prev => [newNotification, ...prev]);
+          if (currentUser && newNotification.targetRoles && (newNotification.targetRoles as unknown as string[]).includes(currentUser.role as string)) {
+            setNotifications(prev => [newNotification, ...prev].sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
           }
         }
         if (payload.eventType === 'UPDATE') {
@@ -274,7 +288,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       if (error.message.includes('User already registered')) {
         return { success: false, message: 'Este endereço de e-mail já está cadastrado. Por favor, tente fazer login.' };
       }
-      if (error.message.includes('valid email')) {
+      if (error.message.includes('valid email') || error.message.includes('validation failed')) {
         return { success: false, message: 'O endereço de e-mail fornecido não parece ser válido.' };
       }
       return { success: false, message: 'Ocorreu um erro inesperado durante o cadastro. Por favor, tente novamente.' };
@@ -282,12 +296,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     if (!authData.user) return { success: false, message: 'Não foi possível criar o usuário. Tente novamente.' };
 
-    await createNotification({
-      title: 'Novo Usuário Registrado',
-      description: `O usuário ${data.name} (${data.email}) se registrou como ${data.role} e precisa de aprovação.`,
-      targetRoles: ['Administrador'],
-      link: '/configuracoes'
-    });
+    // The notification is now created by a database trigger, so this is no longer needed.
 
     return { success: true, message: 'Cadastro realizado! Sua conta precisa ser aprovada por um administrador.' };
   };
@@ -381,9 +390,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
       timestamp: format(new Date(), 'HH:mm'),
     };
     
-    const { error } = await supabase.from('orders').insert(newOrder);
+    const { data: insertedOrder, error } = await supabase.from('orders').insert(newOrder).select().single();
     
-    if (!error) {
+    if (!error && insertedOrder) {
       // After successfully adding order, update or create customer
       const { data: existingCustomer } = await supabase.from('customers').select('*').eq('name', data.customerName).single();
 
@@ -410,7 +419,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       
       await createNotification({
         title: 'Novo Pedido!',
-        description: `Pedido de ${data.customerName} no valor de R$ ${total.toFixed(2)} foi recebido.`,
+        description: `Pedido #${insertedOrder.id} de ${data.customerName} no valor de R$ ${total.toFixed(2)} foi recebido.`,
         targetRoles: ['Administrador', 'Funcionário'],
         link: '/pedidos'
       });
@@ -432,9 +441,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.from('orders').update(updatedOrder).eq('id', orderId);
     if (error) console.error("Error updating order:", error);
     else {
+      if (!currentUser) return;
       await createNotification({
         title: 'Pedido Modificado',
-        description: `O pedido #${orderId} foi alterado por ${currentUser?.name}.`,
+        description: `O pedido #${orderId} foi alterado por ${currentUser.name}.`,
         targetRoles: ['Administrador', 'Funcionário'],
         link: `/pedidos`
       });
@@ -460,7 +470,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   };
   
   const deleteAllOrders = async () => {
-    if (currentUser?.role !== 'Administrador') return;
+    if (!currentUser || currentUser.role !== 'Administrador') return;
     const { error } = await supabase.from('orders').delete().neq('id', 0); // trick to delete all rows
     if (error) console.error("Error deleting all orders:", error);
     else {
@@ -545,7 +555,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
             phone: data.phone ?? null,
             address: data.address ?? null,
             locationLink: data.locationLink ?? null,
-            // lastOrderDate, totalSpent, orderCount have defaults in DB or will be populated by first order
         });
         if (error) console.error("Error adding customer:", error);
     }
