@@ -156,13 +156,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const { data: { session } } = supabase.auth.getSessionSync();
-    if (session?.user) {
-      fetchAllData(session.user);
-    } else {
-      setIsLoading(false);
-    }
-
     const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         await fetchAllData(session.user);
@@ -606,3 +599,5 @@ export const useUser = () => {
   }
   return context;
 };
+
+    
