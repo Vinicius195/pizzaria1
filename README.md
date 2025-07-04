@@ -186,9 +186,9 @@ The very first user account (likely your own administrator account) is created w
 
 You can now log in to the application. All subsequent users can be approved from the "Configurações" page within the app itself.
 
-### 4. (Optional but Recommended) Disable Email Confirmation
+### 4. Important: Disable Email Confirmation
 
-For the registration flow to be as smooth as possible, it is recommended to disable the "Confirm email" feature in your Supabase project.
+For the intended registration flow to work (where an admin approves the account), you **must** disable the "Confirm email" feature in your Supabase project. If you leave it enabled, a new user will be created but will not appear in the "Configurações" page for approval until they confirm their email.
 
 1.  Go to **Authentication** -> **Providers**.
 2.  Find the **Email** provider and click the three dots to select **Edit**.

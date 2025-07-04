@@ -299,9 +299,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   };
 
   const registerUser = async (data: { name: string; email: string; password: string; role: UserRole }) => {
-    // This flow requires "Confirm email" to be DISABLED in Supabase Auth settings.
-    // The user's profile and a notification for the admin are created via database triggers.
-    const { error } = await supabase.auth.signUp({
+    const { data: signUpData, error } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
       options: {
@@ -317,13 +315,21 @@ export function UserProvider({ children }: { children: ReactNode }) {
       if (error.message.includes('User already registered')) {
         return { success: false, message: 'Este endereço de e-mail já está cadastrado. Por favor, tente fazer login.' };
       }
-       if (error.message.includes('valid email') || error.message.includes('validation failed')) {
+      if (error.message.includes('valid email') || error.message.includes('validation failed')) {
         return { success: false, message: 'O endereço de e-mail fornecido não parece ser válido.' };
       }
-      return { success: false, message: `Ocorreu um erro no cadastro. Tente novamente.` };
+      return { success: false, message: `Ocorreu um erro no cadastro: ${error.message}` };
+    }
+    
+    // This happens when "Confirm email" is enabled in Supabase. The trigger won't fire until confirmation.
+    if (!signUpData.user?.identities?.length) {
+        return { 
+            success: true, 
+            message: 'Conta criada! Verifique seu e-mail para confirmar o cadastro. Para o fluxo de aprovação funcionar, peça a um administrador para desativar a "confirmação de e-mail" no Supabase.' 
+        };
     }
 
-    // After sign-up, the triggers in Supabase will handle creating the profile and the admin notification.
+    // In the default flow (email confirmation disabled), the DB trigger creates the profile.
     // We sign the user out so they must wait for admin approval.
     await supabase.auth.signOut();
 
