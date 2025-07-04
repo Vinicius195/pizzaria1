@@ -30,6 +30,9 @@ CREATE TABLE public.profiles (
   PRIMARY KEY (id)
 );
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+-- NEW POLICY: Allow new users to insert their own profile.
+CREATE POLICY "Users can insert their own profile." ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
 -- Policies for profiles:
 CREATE POLICY "Public profiles are viewable by authenticated users." ON public.profiles FOR SELECT TO authenticated USING (true);
 CREATE POLICY "Users can update own profile." ON public.profiles FOR UPDATE USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
@@ -127,72 +130,13 @@ VALUES (
 );
 ```
 
-### 3. Create the User Profile Sync Function and Trigger
+### 3. (Optional but Recommended) Disable Email Confirmation
 
-This function automatically creates a profile for a new user upon registration.
+For the registration flow to be as smooth as possible, it is recommended to disable the "Confirm email" feature in your Supabase project.
 
-Go to **Database** > **Functions** and create a new function called `handle_new_user`. Use the code below for its definition.
-```sql
--- Function to create a new profile when a user signs up.
-create function public.handle_new_user()
-returns trigger
-language plpgsql
-security definer set search_path = public
-as $$
-begin
-  insert into public.profiles (id, name, email, role, status, fallback)
-  values (
-    new.id,
-    new.raw_user_meta_data->>'name',
-    new.email,
-    new.raw_user_meta_data->>'role',
-    'Pendente',
-    SUBSTRING(new.raw_user_meta_data->>'name' FROM 1 FOR 1)
-  );
-  return new;
-end;
-$$;
-```
-> **Note**: When creating via the UI, set the "Return type" to `trigger` and "Language" to `plpgsql`. The function body goes in the "Definition" field. Under "Advanced Settings", set "Security" to `DEFINER`.
-
-Now, create a trigger to execute the function. Go to **Database** > **Triggers** and create a new trigger with the following settings:
-- **Name**: `on_auth_user_created`
-- **Table**: `users` (in the `auth` schema)
-- **Events**: `INSERT`
-- **Trigger Type**: `After`
-- **Function**: `handle_new_user`
-
-### 4. Create the New User Notification Function and Trigger
-
-This function will automatically create a notification for administrators whenever a new user's profile is created.
-
-First, create the function. Go to **Database** > **Functions** and create a new function called `create_new_user_notification`.
-```sql
--- Function to create a notification for a new user
-create function public.create_new_user_notification()
-returns trigger
-language plpgsql
-security definer set search_path = public
-as $$
-begin
-  insert into public.notifications (title, description, "targetRoles", link)
-  values (
-    'Novo Usuário Registrado',
-    'O usuário ' || new.name || ' (' || new.email || ') se registrou como ' || new.role || ' e precisa de aprovação.',
-    '["Administrador"]'::jsonb,
-    '/configuracoes'
-  );
-  return new;
-end;
-$$;
-```
-> **Note**: Just like before, set the "Return type" to `trigger`, "Language" to `plpgsql`, and "Security" to `DEFINER`.
-
-Next, create the trigger. Go to **Database** > **Triggers** and create a new trigger with these settings:
-- **Name**: `on_profile_created`
-- **Table**: `profiles` (in the `public` schema)
-- **Events**: `INSERT`
-- **Trigger Type**: `After`
-- **Function**: `create_new_user_notification`
+1.  Go to **Authentication** -> **Providers**.
+2.  Find the **Email** provider and click the three dots to select **Edit**.
+3.  Turn **OFF** the toggle for "Confirm email".
+4.  Click **Save**.
 
 After these steps, your Supabase backend will be fully configured to work with the application.
