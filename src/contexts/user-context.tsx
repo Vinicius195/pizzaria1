@@ -123,9 +123,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       ]);
 
       if (profileRes.error || !profileRes.data) {
-        // If the profile doesn't exist, it might be a user whose trigger failed.
-        // Let's not log them out immediately, but handle it gracefully.
-        // The login function will now attempt to create a profile.
+        // This can happen if the user was created but the profile trigger failed.
         console.warn("User profile not found for user:", user.id);
         setCurrentUser(null);
         setIsLoading(false);
@@ -166,24 +164,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      const user = session?.user;
-      if (user) {
-        // If user exists, fetch their data.
-        await fetchAllData(user);
-      } else {
-        // If no session, clear user data.
-        setCurrentUser(null);
-        setUsers([]);
-        setOrders([]);
-        setProducts([]);
-        setCustomers([]);
-        setNotifications([]);
-        setIsLoading(false);
-      }
-    });
-  
-    // Initial check
     const getInitialSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
@@ -193,6 +173,26 @@ export function UserProvider({ children }: { children: ReactNode }) {
       }
     };
     getInitialSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const user = session?.user;
+      if (user) {
+        // Re-fetch data on sign-in or token refresh
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (currentUser) {
+            await fetchAllData(currentUser);
+        }
+      } else {
+        // Clear user data on sign-out
+        setCurrentUser(null);
+        setUsers([]);
+        setOrders([]);
+        setProducts([]);
+        setCustomers([]);
+        setNotifications([]);
+        setIsLoading(false);
+      }
+    });
   
     return () => {
       authListener.subscription.unsubscribe();
@@ -267,7 +267,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       supabase.removeChannel(notificationsChannel);
       supabase.removeChannel(settingsChannel);
     };
-  }, [currentUser]);
+  }, [currentUser, fetchAllData]);
 
   // --- Auth Functions ---
   const login = async (email: string, password: string) => {
@@ -282,11 +282,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
     if (data.user) {
       const { data: profile, error: profileError } = await supabase.from('profiles').select('status').eq('id', data.user.id).single();
       
-      if (profileError && profileError.code === 'PGRST116') {
-          return { success: false, message: 'Seu perfil não foi encontrado. Se você acabou de se registrar, aguarde a aprovação.' };
+      if (profileError || !profile) {
+        return { success: false, message: 'Seu perfil não foi encontrado. Se você acabou de se registrar, aguarde a aprovação.' };
       }
-      if (profileError || !profile) return { success: false, message: 'Perfil de usuário não encontrado.' };
-
+      
       if (profile.status === 'Pendente') return { success: false, message: 'Sua conta ainda está pendente de aprovação.' };
       if (profile.status === 'Reprovado') return { success: false, message: 'Sua conta foi reprovada.' };
     }
@@ -300,57 +299,35 @@ export function UserProvider({ children }: { children: ReactNode }) {
   };
 
   const registerUser = async (data: { name: string; email: string; password: string; role: UserRole }) => {
-    // This flow requires "Confirm email" to be DISABLED in Supabase Auth settings to work seamlessly.
-    // If it's enabled, the user will be created but the profile insertion might fail without a session.
-    
-    const { data: authData, error: signUpError } = await supabase.auth.signUp({
+    // This flow requires "Confirm email" to be DISABLED in Supabase Auth settings.
+    // The user's profile and a notification for the admin are created via database triggers.
+    const { error } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
+      options: {
+        data: {
+          name: data.name,
+          role: data.role,
+        },
+      },
     });
 
-    if (signUpError) {
-      console.error('Supabase registration error:', signUpError.message);
-      if (signUpError.message.includes('User already registered')) {
+    if (error) {
+      console.error('Supabase registration error:', error.message);
+      if (error.message.includes('User already registered')) {
         return { success: false, message: 'Este endereço de e-mail já está cadastrado. Por favor, tente fazer login.' };
       }
-      if (signUpError.message.includes('valid email') || signUpError.message.includes('validation failed')) {
+       if (error.message.includes('valid email') || error.message.includes('validation failed')) {
         return { success: false, message: 'O endereço de e-mail fornecido não parece ser válido.' };
       }
-      return { success: false, message: `Ocorreu um erro: ${signUpError.message}` };
+      return { success: false, message: `Ocorreu um erro no cadastro. Tente novamente.` };
     }
 
-    if (!authData.user) {
-        return { success: false, message: 'Não foi possível criar o usuário. Tente novamente.' };
-    }
-    
-    // Manually insert the profile. This requires an RLS policy.
-    const { error: profileError } = await supabase.from('profiles').insert({
-        id: authData.user.id,
-        name: data.name,
-        email: data.email,
-        role: data.role,
-        status: 'Pendente',
-        fallback: data.name.substring(0, 1).toUpperCase()
-    });
-
-    if (profileError) {
-        console.error('Error creating profile for new user:', profileError);
-        // If profile creation fails, we have an orphaned auth user. This is a trade-off for not using triggers.
-        return { success: false, message: 'Sua conta foi criada, mas houve um erro ao criar seu perfil. Contate um administrador.' };
-    }
-    
-    // Create notification for admin
-    await createNotification({
-        title: 'Novo Usuário Registrado',
-        description: `O usuário ${data.name} (${data.email}) se registrou como ${data.role} e precisa de aprovação.`,
-        targetRoles: ['Administrador'],
-        link: '/configuracoes'
-    });
-
-    // Sign out the user immediately after registration, so they have to wait for approval
+    // After sign-up, the triggers in Supabase will handle creating the profile and the admin notification.
+    // We sign the user out so they must wait for admin approval.
     await supabase.auth.signOut();
-    
-    return { success: true, message: 'Cadastro realizado! Sua conta precisa ser aprovada por um administrador.' };
+
+    return { success: true, message: 'Cadastro realizado! Sua conta precisa ser aprovada por um administrador para que você possa fazer login.' };
   };
 
   const updateUser = async (userId: string, profileData: Partial<UserProfile>, newPassword?: string | null) => {
